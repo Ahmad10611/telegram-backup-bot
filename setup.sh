@@ -1,22 +1,22 @@
 #!/bin/bash
 
 # استعلام اطلاعات از کاربر
-echo "لطفاً توکن ربات تلگرام خود را وارد کنید:"
+echo "Please enter your Telegram bot token:"
 read telegram_token
 
-echo "لطفاً آیدی عددی کاربر مجاز را وارد کنید:"
+echo "Please enter the authorized user ID:"
 read authorized_user_id
 
-echo "لطفاً نام کاربری MySQL را وارد کنید:"
+echo "Please enter your MySQL username:"
 read db_user
 
-echo "لطفاً رمز عبور MySQL را وارد کنید:"
+echo "Please enter your MySQL password:"
 read -s db_password
 
-echo "لطفاً نام دیتابیس MySQL را وارد کنید:"
+echo "Please enter your MySQL database name:"
 read db_name
 
-echo "لطفاً هاست دیتابیس MySQL (مثلاً localhost) را وارد کنید:"
+echo "Please enter your MySQL database host (e.g., localhost):"
 read db_host
 
 # ذخیره اطلاعات در فایل کانفیگ
@@ -30,9 +30,9 @@ DB_HOST=${db_host}
 EOT
 
 # نصب وابستگی‌ها
-echo "در حال نصب وابستگی‌ها..."
+echo "Installing dependencies..."
 pip3 install -r requirements.txt
 
 # اجرای ربات
-echo "ربات در حال اجرا است..."
+echo "Running the bot..."
 python3 telegram_bot.py
