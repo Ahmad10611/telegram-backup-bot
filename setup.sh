@@ -1,23 +1,5 @@
 #!/bin/bash
 
-# تابع نصب بسته‌های مورد نیاز برای توزیع‌های مختلف
-install_dependencies() {
-    if [ -f /etc/debian_version ]; then
-        echo "Debian/Ubuntu detected. Installing dependencies..."
-        sudo apt update
-        sudo apt install -y python3 python3-pip mysql-client libmysqlclient-dev
-    elif [ -f /etc/redhat-release ]; then
-        echo "CentOS/RHEL detected. Installing dependencies..."
-        sudo yum install -y python3 python3-pip mariadb mariadb-devel
-    elif [ -f /etc/arch-release ]; then
-        echo "Arch Linux detected. Installing dependencies..."
-        sudo pacman -Syu --noconfirm python3 python-pip mariadb
-    else
-        echo "Unsupported Linux distribution. Please install dependencies manually."
-        exit 1
-    fi
-}
-
 # استعلام اطلاعات از کاربر
 echo "Please enter your Telegram bot token:"
 read telegram_token
@@ -37,15 +19,34 @@ read db_name
 echo "Please enter your MySQL database host (e.g., localhost):"
 read db_host
 
-# ذخیره اطلاعات در فایل کانفیگ
+# ذخیره اطلاعات در فایل کانفیگ با قالب‌بندی صحیح
 cat <<EOT > config.cfg
+[telegram]
 TELEGRAM_TOKEN=${telegram_token}
 AUTHORIZED_USER_ID=${authorized_user_id}
+
+[database]
 DB_USER=${db_user}
 DB_PASSWORD=${db_password}
 DB_NAME=${db_name}
 DB_HOST=${db_host}
 EOT
+
+# تابع نصب وابستگی‌ها
+install_dependencies() {
+    # شناسایی سیستم‌عامل
+    if [ -f /etc/debian_version ]; then
+        echo "Debian/Ubuntu detected. Installing dependencies..."
+        apt-get update
+        apt-get install -y python3 python3-pip mysql-client libmysqlclient-dev
+    elif [ -f /etc/redhat-release ]; then
+        echo "RHEL/CentOS detected. Installing dependencies..."
+        yum install -y python3 python3-pip mysql
+    else
+        echo "Unsupported OS. Please install dependencies manually."
+        exit 1
+    fi
+}
 
 # نصب وابستگی‌ها
 echo "Installing dependencies..."
