@@ -32,6 +32,7 @@ EOT
 
 # نصب وابستگی‌ها بر اساس سیستم عامل
 echo "Installing dependencies..."
+
 if [ -x "$(command -v apt)" ]; then
     echo "Debian/Ubuntu detected. Installing dependencies..."
     apt update
@@ -39,6 +40,12 @@ if [ -x "$(command -v apt)" ]; then
 elif [ -x "$(command -v yum)" ]; then
     echo "RHEL/CentOS detected. Installing dependencies..."
     yum install -y python3 python3-pip mariadb nodejs npm
+elif [ -x "$(command -v pacman)" ]; then
+    echo "Arch Linux detected. Installing dependencies..."
+    pacman -Syu --noconfirm python python-pip mariadb-clients nodejs npm
+elif [ -x "$(command -v apk)" ]; then
+    echo "Alpine Linux detected. Installing dependencies..."
+    apk add --no-cache python3 py3-pip mariadb-client nodejs npm
 else
     echo "Unsupported OS. Please install dependencies manually."
     exit 1
@@ -48,17 +55,20 @@ fi
 echo "Installing Python libraries..."
 pip3 install -r requirements.txt
 
-# نصب PM2 برای مدیریت دائمی ربات
+# نصب و تنظیم PM2
 echo "Installing PM2..."
 npm install pm2@latest -g
 
-# اجرای ربات با استفاده از PM2
+# اجرای ربات با PM2
 echo "Running the bot with PM2..."
-pm2 start telegram_bot.py --name telegram-backup-bot --interpreter=python3
+pm2 start telegram_bot.py --name telegram-backup-bot
 
-# ذخیره تنظیمات PM2 برای اجرا پس از ریستارت سرور
+# ذخیره فرآیند PM2 در سیستم‌عامل
 pm2 save
 pm2 startup
 
 echo "The bot has been successfully started and added to PM2."
 echo "Use 'pm2 logs telegram-backup-bot' to see the bot logs."
+
+# دستور غیرفعال کردن ربات
+echo "To stop the bot, use: pm2 stop telegram-backup-bot"
