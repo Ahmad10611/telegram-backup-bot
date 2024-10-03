@@ -4,7 +4,7 @@
 echo "Please enter your Telegram bot token:"
 read telegram_token
 
-echo "Please enter the authorized user ID:"
+echo "Please enter the authorized user ID (your Telegram numeric ID):"
 read authorized_user_id
 
 echo "Please enter your MySQL username:"
@@ -19,40 +19,32 @@ read db_name
 echo "Please enter your MySQL database host (e.g., localhost):"
 read db_host
 
-# ذخیره اطلاعات در فایل کانفیگ با قالب‌بندی صحیح
+# ذخیره اطلاعات در فایل کانفیگ
 cat <<EOT > config.cfg
-[telegram]
+[DEFAULT]
 TELEGRAM_TOKEN=${telegram_token}
 AUTHORIZED_USER_ID=${authorized_user_id}
-
-[database]
 DB_USER=${db_user}
 DB_PASSWORD=${db_password}
 DB_NAME=${db_name}
 DB_HOST=${db_host}
 EOT
 
-# تابع نصب وابستگی‌ها
-install_dependencies() {
-    # شناسایی سیستم‌عامل
-    if [ -f /etc/debian_version ]; then
-        echo "Debian/Ubuntu detected. Installing dependencies..."
-        apt-get update
-        apt-get install -y python3 python3-pip mysql-client libmysqlclient-dev
-    elif [ -f /etc/redhat-release ]; then
-        echo "RHEL/CentOS detected. Installing dependencies..."
-        yum install -y python3 python3-pip mysql
-    else
-        echo "Unsupported OS. Please install dependencies manually."
-        exit 1
-    fi
-}
-
-# نصب وابستگی‌ها
+# نصب وابستگی‌ها بر اساس سیستم عامل
 echo "Installing dependencies..."
-install_dependencies
+if [ -x "$(command -v apt)" ]; then
+    echo "Debian/Ubuntu detected. Installing dependencies..."
+    apt update
+    apt install -y python3 python3-pip mysql-client libmysqlclient-dev
+elif [ -x "$(command -v yum)" ]; then
+    echo "RHEL/CentOS detected. Installing dependencies..."
+    yum install -y python3 python3-pip mariadb
+else
+    echo "Unsupported OS. Please install dependencies manually."
+    exit 1
+fi
 
-# نصب کتابخانه‌های Python از فایل requirements.txt
+# نصب کتابخانه‌های پایتون
 echo "Installing Python libraries..."
 pip3 install -r requirements.txt
 
