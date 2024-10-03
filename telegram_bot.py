@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import logging
 import mysql.connector
 import subprocess
@@ -10,8 +11,6 @@ from datetime import datetime
 import zipfile
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-import configparser
-import pytz
 import jdatetime
 
 # تنظیمات لاگر
@@ -19,7 +18,9 @@ log_dir = "/root/backups/logs"
 if not os.path.exists(log_dir):
     os.makedirs(log_dir, mode=0o700)
 
-log_file = f"{log_dir}/backup_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+# استفاده از قالب‌بندی قدیمی برای جلوگیری از خطای SyntaxError
+log_file = "{}/backup_log_{}.log".format(log_dir, datetime.now().strftime('%Y%m%d_%H%M%S'))
+
 logging.basicConfig(
     filename=log_file,
     level=logging.INFO,
@@ -27,16 +28,19 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-# خواندن فایل تنظیمات
-config = configparser.ConfigParser()
-config.read('config.cfg')
+# آیدی عددی مجاز (آیدی شما)
+AUTHORIZED_USER_ID = 5085737770  # آیدی عددی تلگرام شما
 
-TELEGRAM_TOKEN = config['DEFAULT']['TELEGRAM_TOKEN']
-AUTHORIZED_USER_ID = int(config['DEFAULT']['AUTHORIZED_USER_ID'])
-DB_USER = config['DEFAULT']['DB_USER']
-DB_PASSWORD = config['DEFAULT']['DB_PASSWORD']
-DB_NAME = config['DEFAULT']['DB_NAME']
-DB_HOST = config['DEFAULT']['DB_HOST']
+# اطلاعات اتصال به دیتابیس
+db_config = {
+    'host': 'localhost',
+    'user': 'sql_ddr_drmobile',
+    'password': 'f25c042a75c29',
+    'database': 'sql_ddr_drmobile'
+}
+
+# توکن ربات تلگرام شما
+TELEGRAM_TOKEN = '6788701278:AAFYp8eAixecU3aFro8AYo256sSIMBeRyW8'
 
 # ایجاد شیء Scheduler
 scheduler = AsyncIOScheduler()
@@ -58,18 +62,12 @@ def backup_database():
         if not os.path.exists(backup_dir):
             os.makedirs(backup_dir, mode=0o700)
 
-        # تنظیم نام فایل پشتیبان با فرمت تاریخ و زمان شمسی
-        tz_tehran = pytz.timezone('Asia/Tehran')
-        now = datetime.now(tz_tehran)
-        persian_date = jdatetime.date.fromgregorian(date=now.date()).strftime('%Y-%m-%d')
-        time_str = now.strftime('%H-%M-%S')
-        backup_file = f"{backup_dir}/backup_{persian_date}_{time_str}.sql"
-
-        command = f"mysqldump -h {DB_HOST} -u {DB_USER} -p{DB_PASSWORD} {DB_NAME} > {backup_file}"
+        backup_file = f"{backup_dir}/backup.sql"
+        command = f"mysqldump -h {db_config['host']} -u {db_config['user']} -p{db_config['password']} {db_config['database']} > {backup_file}"
         subprocess.run(command, shell=True, check=True)
 
         # فشرده‌سازی فایل پشتیبان
-        zip_file = f"{backup_dir}/backup_{persian_date}_{time_str}.zip"
+        zip_file = f"{backup_dir}/backup.zip"
         with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:
             zf.write(backup_file, os.path.basename(backup_file))
 
@@ -131,16 +129,4 @@ def main():
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(CallbackQueryHandler(button))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    
-    # استارت Scheduler فقط یک بار
-    if not scheduler.running:
-        scheduler.start()
-        logging.info("Scheduler started")
-
-    application.run_polling()
-    logging.info("ربات تلگرامی متوقف شد.")
-
-if __name__ == '__main__':
-    main()
+    application.add_handler(
