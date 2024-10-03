@@ -36,45 +36,40 @@ if [ -x "$(command -v apt)" ]; then
     echo "Debian/Ubuntu detected. Installing dependencies..."
     apt update
     apt install -y python3 python3-pip mariadb-client libmariadb-dev curl
-
-    # نصب Node.js نسخه 16 یا بالاتر
-    curl -sL https://deb.nodesource.com/setup_16.x | bash -
+    
+    # نصب Node.js نسخه 20 یا بالاتر
+    curl -sL https://deb.nodesource.com/setup_20.x | bash -
     apt install -y nodejs
 elif [ -x "$(command -v yum)" ]; then
     echo "RHEL/CentOS detected. Installing dependencies..."
-    yum install -y python3 python3-pip mariadb curl
+    yum install -y python3 python3-pip mariadb curl centos-release-scl
+    yum install -y rh-python38
 
-    # نصب Node.js نسخه 16 یا بالاتر
-    curl -sL https://rpm.nodesource.com/setup_16.x | bash -
+    # نصب Node.js نسخه 20 یا بالاتر
+    curl -sL https://rpm.nodesource.com/setup_20.x | bash -
     yum install -y nodejs
 else
     echo "Unsupported OS. Please install dependencies manually."
     exit 1
 fi
 
-# بررسی نصب پایتون 3.8
-if ! command -v python3.8 &> /dev/null
-then
-    echo "Python 3.8 not found, installing..."
-    if [ -x "$(command -v apt)" ]; then
-        apt install -y python3.8
-    elif [ -x "$(command -v yum)" ]; then
-        yum install -y python38
-    fi
+# فعال‌سازی Python 3.8 روی CentOS
+if [ -x "$(command -v scl)" ]; then
+    echo "Activating Python 3.8 on CentOS..."
+    scl enable rh-python38 bash
 fi
 
 # نصب کتابخانه‌های پایتون
 echo "Installing Python libraries..."
-pip3 install mysql-connector-python==8.0.33
-pip3 install apscheduler==3.10.4 python-telegram-bot==21.6 pytz==2024.2 jdatetime==3.7.0 tzlocal==5.2
+pip3 install -r requirements.txt
 
 # نصب و تنظیم PM2
 echo "Installing PM2..."
 npm install pm2@latest -g
 
-# اجرای ربات با PM2 با مسیر صحیح پایتون 3.8
+# اجرای ربات با PM2
 echo "Running the bot with PM2..."
-pm2 start telegram_bot.py --interpreter $(which python3.8) --name telegram-backup-bot
+pm2 start telegram_bot.py --name telegram-backup-bot --interpreter python3.8
 
 # ذخیره فرآیند PM2 در سیستم‌عامل
 pm2 save
