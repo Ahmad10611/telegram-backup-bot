@@ -35,10 +35,10 @@ echo "Installing dependencies..."
 if [ -x "$(command -v apt)" ]; then
     echo "Debian/Ubuntu detected. Installing dependencies..."
     apt update
-    apt install -y python3 python3-pip mysql-client libmysqlclient-dev
+    apt install -y python3 python3-pip mysql-client libmysqlclient-dev nodejs npm
 elif [ -x "$(command -v yum)" ]; then
     echo "RHEL/CentOS detected. Installing dependencies..."
-    yum install -y python3 python3-pip mariadb
+    yum install -y python3 python3-pip mariadb nodejs npm
 else
     echo "Unsupported OS. Please install dependencies manually."
     exit 1
@@ -48,6 +48,17 @@ fi
 echo "Installing Python libraries..."
 pip3 install -r requirements.txt
 
-# اجرای ربات
-echo "Running the bot..."
-python3 telegram_bot.py
+# نصب PM2 برای مدیریت دائمی ربات
+echo "Installing PM2..."
+npm install pm2@latest -g
+
+# اجرای ربات با استفاده از PM2
+echo "Running the bot with PM2..."
+pm2 start telegram_bot.py --name telegram-backup-bot --interpreter=python3
+
+# ذخیره تنظیمات PM2 برای اجرا پس از ریستارت سرور
+pm2 save
+pm2 startup
+
+echo "The bot has been successfully started and added to PM2."
+echo "Use 'pm2 logs telegram-backup-bot' to see the bot logs."
