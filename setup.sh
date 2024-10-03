@@ -36,13 +36,13 @@ if [ -x "$(command -v apt)" ]; then
     echo "Debian/Ubuntu detected. Installing dependencies..."
     apt update
     apt install -y python3.8 python3.8-venv python3.8-dev python3-pip mariadb-client libmariadb-dev curl
-
+    
     # نصب Node.js نسخه 16 یا بالاتر
     curl -sL https://deb.nodesource.com/setup_16.x | bash -
     apt install -y nodejs
 elif [ -x "$(command -v yum)" ]; then
     echo "RHEL/CentOS detected. Installing dependencies..."
-    yum install -y python3.8 python3.8-venv python3.8-dev python3-pip mariadb curl
+    yum install -y python38 python38-devel python3-pip mariadb curl
 
     # نصب Node.js نسخه 16 یا بالاتر
     curl -sL https://rpm.nodesource.com/setup_16.x | bash -
@@ -60,9 +60,9 @@ pip3 install -r requirements.txt
 echo "Installing PM2..."
 npm install pm2@latest -g
 
-# اجرای ربات با PM2
+# اجرای ربات با PM2 و استفاده از Python 3.8
 echo "Running the bot with PM2..."
-pm2 start telegram_bot.py --name telegram-backup-bot
+pm2 start telegram_bot.py --interpreter python3.8 --name telegram-backup-bot
 
 # ذخیره فرآیند PM2 در سیستم‌عامل
 pm2 save
