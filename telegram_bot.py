@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import logging
 import mysql.connector
 import subprocess
