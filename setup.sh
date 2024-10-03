@@ -46,7 +46,7 @@ elif [ -x "$(command -v yum)" ]; then
 
     # نصب نسخه درست Node.js
     curl -sL https://rpm.nodesource.com/setup_18.x | bash -
-    yum install -y nodejs
+    yum install -y nodejs || { echo "Error installing Node.js, skipping..."; }
 else
     echo "Unsupported OS. Please install dependencies manually."
     exit 1
@@ -66,9 +66,19 @@ else
     echo "Python 3.8 already installed."
 fi
 
+# اطمینان از نصب pip صحیح
+if ! [ -x "$(command -v pip3)" ]; then
+    echo "pip3 not found, installing..."
+    python3 -m ensurepip --upgrade || { echo "Error installing pip3."; exit 1; }
+else
+    echo "pip3 already installed."
+fi
+
+# به‌روز رسانی pip به آخرین نسخه
+pip3 install --upgrade pip
+
 # نصب کتابخانه‌های پایتون
 echo "Installing Python libraries..."
-pip3 install --upgrade pip
 pip3 install -r requirements.txt || { echo "Error installing Python libraries."; exit 1; }
 
 # نصب و تنظیم PM2
