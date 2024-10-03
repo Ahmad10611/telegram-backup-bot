@@ -32,20 +32,13 @@ EOT
 
 # نصب وابستگی‌ها بر اساس سیستم عامل
 echo "Installing dependencies..."
-
 if [ -x "$(command -v apt)" ]; then
     echo "Debian/Ubuntu detected. Installing dependencies..."
     apt update
-    apt install -y python3 python3-pip mysql-client libmysqlclient-dev nodejs npm
+    apt install -y python3 python3-pip mariadb-client libmariadb-dev nodejs npm
 elif [ -x "$(command -v yum)" ]; then
     echo "RHEL/CentOS detected. Installing dependencies..."
     yum install -y python3 python3-pip mariadb nodejs npm
-elif [ -x "$(command -v pacman)" ]; then
-    echo "Arch Linux detected. Installing dependencies..."
-    pacman -Syu --noconfirm python python-pip mariadb-clients nodejs npm
-elif [ -x "$(command -v apk)" ]; then
-    echo "Alpine Linux detected. Installing dependencies..."
-    apk add --no-cache python3 py3-pip mariadb-client nodejs npm
 else
     echo "Unsupported OS. Please install dependencies manually."
     exit 1
