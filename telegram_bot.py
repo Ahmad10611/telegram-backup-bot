@@ -26,17 +26,16 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-# خواندن فایل کانفیگ
+# خواندن فایل تنظیمات
 config = configparser.ConfigParser()
 config.read('config.cfg')
 
-# گرفتن اطلاعات از فایل کانفیگ
-telegram_token = config['telegram']['TELEGRAM_TOKEN']
-authorized_user_id = config['telegram']['AUTHORIZED_USER_ID']
-db_user = config['database']['DB_USER']
-db_password = config['database']['DB_PASSWORD']
-db_name = config['database']['DB_NAME']
-db_host = config['database']['DB_HOST']
+TELEGRAM_TOKEN = config['DEFAULT']['TELEGRAM_TOKEN']
+AUTHORIZED_USER_ID = int(config['DEFAULT']['AUTHORIZED_USER_ID'])
+DB_USER = config['DEFAULT']['DB_USER']
+DB_PASSWORD = config['DEFAULT']['DB_PASSWORD']
+DB_NAME = config['DEFAULT']['DB_NAME']
+DB_HOST = config['DEFAULT']['DB_HOST']
 
 # ایجاد شیء Scheduler
 scheduler = AsyncIOScheduler()
@@ -44,7 +43,7 @@ scheduler = AsyncIOScheduler()
 # تابع بررسی کاربر مجاز
 def is_authorized(update: Update):
     user_id = update.message.chat_id
-    authorized = user_id == int(authorized_user_id)
+    authorized = user_id == AUTHORIZED_USER_ID
     if authorized:
         logging.info(f"کاربر مجاز: {user_id} در حال استفاده از ربات است.")
     else:
@@ -58,19 +57,18 @@ def backup_database():
         if not os.path.exists(backup_dir):
             os.makedirs(backup_dir, mode=0o700)
 
-        # زمان به صورت شمسی و در زون تایم تهران
-        tehran_tz = pytz.timezone('Asia/Tehran')
-        current_time = datetime.now(tehran_tz)
-        jalali_date = jdatetime.datetime.fromgregorian(datetime=current_time)
-        backup_file_name = f"backup_{jalali_date.strftime('%Y-%m-%d_%H-%M-%S')}.sql"
+        # تنظیم نام فایل پشتیبان با فرمت تاریخ و زمان شمسی
+        tz_tehran = pytz.timezone('Asia/Tehran')
+        now = datetime.now(tz_tehran)
+        persian_date = jdatetime.date.fromgregorian(date=now.date()).strftime('%Y-%m-%d')
+        time_str = now.strftime('%H-%M-%S')
+        backup_file = f"{backup_dir}/backup_{persian_date}_{time_str}.sql"
 
-        backup_file = f"{backup_dir}/{backup_file_name}"
-        command = f"mysqldump -h {db_host} -u {db_user} -p{db_password} {db_name} > {backup_file}"
+        command = f"mysqldump -h {DB_HOST} -u {DB_USER} -p{DB_PASSWORD} {DB_NAME} > {backup_file}"
         subprocess.run(command, shell=True, check=True)
 
         # فشرده‌سازی فایل پشتیبان
-        zip_file_name = f"backup_{jalali_date.strftime('%Y-%m-%d_%H-%M-%S')}.zip"
-        zip_file = f"{backup_dir}/{zip_file_name}"
+        zip_file = f"{backup_dir}/backup_{persian_date}_{time_str}.zip"
         with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:
             zf.write(backup_file, os.path.basename(backup_file))
 
@@ -82,7 +80,7 @@ def backup_database():
 
 # تابع ارسال پشتیبان دیتابیس
 async def send_backup(context):
-    chat_id = int(authorized_user_id)
+    chat_id = AUTHORIZED_USER_ID
     backup_file = backup_database()
     if backup_file:
         await context.bot.send_document(chat_id=chat_id, document=open(backup_file, 'rb'))
@@ -129,7 +127,7 @@ async def handle_message(update: Update, context):
 def main():
     logging.info("ربات تلگرامی شروع به کار کرد.")
     
-    application = Application.builder().token(telegram_token).build()
+    application = Application.builder().token(TELEGRAM_TOKEN).build()
     
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(button))
