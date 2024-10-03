@@ -3,3 +3,4 @@ apscheduler==3.10.4
 python-telegram-bot==21.6
 pytz==2024.2
 jdatetime==3.7.0
+tzlocal==5.2
