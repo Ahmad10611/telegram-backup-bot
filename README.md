@@ -1,55 +1,55 @@
-### Telegram Backup Bot - Detailed Instructions
+### ربات پشتیبان‌گیری تلگرام - راهنمای کامل
 
-**Description:**
-A Telegram bot for automating the backup of MySQL databases and delivering the backup files directly via Telegram. The bot is designed to schedule regular backups and ensure files are delivered securely using Telegram’s bot API. It supports PM2 to keep the bot running persistently on your Linux server.
+**توضیحات:**
+یک ربات تلگرام برای خودکارسازی فرآیند پشتیبان‌گیری از دیتابیس MySQL و ارسال فایل‌های پشتیبان از طریق تلگرام. این ربات به گونه‌ای طراحی شده که پشتیبان‌گیری‌های زمان‌بندی‌شده را به طور منظم انجام داده و فایل‌ها را به صورت امن از طریق API تلگرام ارسال کند. همچنین از **PM2** برای مدیریت مداوم فرآیند ربات استفاده می‌شود.
 
-### Key Features:
-- Backup MySQL databases on a regular schedule.
-- Automate file delivery through Telegram.
-- Persistent process management with PM2.
-- Compatible with major Linux distributions (Debian, Ubuntu, CentOS).
-
----
-
-### Requirements:
-1. A Linux server running **Debian/Ubuntu** or **RHEL/CentOS**.
-2. **MySQL** installed and configured.
-3. **Python 3.8** or higher.
-4. **Node.js** version 16 or higher for managing the bot using **PM2**.
-5. Telegram bot token and authorized user ID.
+### ویژگی‌های کلیدی:
+- پشتیبان‌گیری خودکار از دیتابیس MySQL.
+- ارسال خودکار فایل‌های پشتیبان از طریق تلگرام.
+- مدیریت مداوم فرآیند با **PM2**.
+- سازگار با توزیع‌های لینوکسی محبوب (Debian، Ubuntu، CentOS).
 
 ---
 
-### Installation Instructions
+### نیازمندی‌ها:
+1. یک سرور لینوکسی که **Debian/Ubuntu** یا **RHEL/CentOS** را اجرا می‌کند.
+2. نصب و پیکربندی **MySQL**.
+3. **Python 3.8** یا بالاتر.
+4. **Node.js** نسخه 16 یا بالاتر برای مدیریت ربات با **PM2**.
+5. توکن ربات تلگرام و آیدی عددی کاربر مجاز (authorized user ID).
 
-#### 1. Clone the Repository
-First, clone the bot repository to your server:
+---
+
+### دستورالعمل‌های نصب
+
+#### 1. کلون کردن مخزن
+ابتدا مخزن ربات را به سرور خود کلون کنید:
 
 ```bash
 git clone https://github.com/Ahmad10611/telegram-backup-bot.git
 cd telegram-backup-bot
 ```
 
-#### 2. Run the Setup Script
-The setup script will install all required dependencies, prompt you for necessary configuration details, and start the bot using **PM2**.
+#### 2. اجرای اسکریپت نصب
+اسکریپت نصب تمام وابستگی‌ها را نصب می‌کند، اطلاعات لازم را از شما دریافت می‌کند و ربات را با **PM2** راه‌اندازی می‌کند.
 
 ```bash
 chmod +x setup.sh
 ./setup.sh
 ```
 
-During the setup process, the script will prompt for the following inputs:
+در حین نصب، اسکریپت از شما موارد زیر را درخواست خواهد کرد:
 
-- **Telegram bot token**: Get it from [BotFather](https://t.me/BotFather).
-- **Authorized user ID**: This is your Telegram numeric user ID. You can find it via Telegram user ID bots like [userinfobot](https://t.me/userinfobot).
-- **MySQL username**: The username to access your MySQL database.
-- **MySQL password**: The password for the MySQL user.
-- **MySQL database name**: The name of the database you want to back up.
-- **MySQL database host**: Typically `localhost`.
+- **توکن ربات تلگرام**: می‌توانید این توکن را از [BotFather](https://t.me/BotFather) دریافت کنید.
+- **آیدی عددی کاربر مجاز**: این آیدی عددی تلگرام شما است که می‌توانید آن را از ربات‌هایی مانند [userinfobot](https://t.me/userinfobot) دریافت کنید.
+- **نام کاربری MySQL**: نام کاربری دیتابیس MySQL.
+- **رمز عبور MySQL**: رمز عبور برای دسترسی به MySQL.
+- **نام دیتابیس MySQL**: نام دیتابیسی که قصد پشتیبان‌گیری از آن را دارید.
+- **هاست MySQL**: معمولاً `localhost` است.
 
 ---
 
-### Example Setup Flow:
+### جریان نصب نمونه:
 
 ```bash
 Please enter your Telegram bot token: <YOUR_BOT_TOKEN>
@@ -60,40 +60,40 @@ Please enter your MySQL database name: <MYSQL_DATABASE>
 Please enter your MySQL database host (e.g., localhost): localhost
 ```
 
-After providing the necessary details, the script will:
+پس از وارد کردن اطلاعات، اسکریپت به ترتیب:
 
-1. Install system dependencies (`Python3.8`, `MySQL client`, `Node.js`, etc.).
-2. Install Python libraries (like `mysql-connector-python`, `apscheduler`, `python-telegram-bot`, etc.).
-3. Install and configure **PM2** to manage the bot as a persistent process.
-4. Start the bot with **PM2**.
+1. وابستگی‌های سیستم (مانند `Python3.8`، `MySQL client`، `Node.js` و غیره) را نصب می‌کند.
+2. کتابخانه‌های پایتون (مانند `mysql-connector-python`، `apscheduler`، `python-telegram-bot` و غیره) را نصب می‌کند.
+3. **PM2** را نصب و پیکربندی می‌کند تا ربات به صورت مداوم اجرا شود.
+4. ربات را با استفاده از **PM2** اجرا می‌کند.
 
 ---
 
-### Usage
+### نحوه استفاده
 
-#### Viewing Bot Logs:
-To check the logs of the bot (for monitoring or debugging purposes), use the following command:
+#### مشاهده لاگ‌های ربات:
+برای مشاهده لاگ‌های ربات (جهت نظارت یا رفع اشکال)، از دستور زیر استفاده کنید:
 
 ```bash
 pm2 logs telegram-backup-bot
 ```
 
-#### Stopping the Bot:
-To stop the bot at any time:
+#### متوقف کردن ربات:
+برای متوقف کردن ربات در هر زمانی:
 
 ```bash
 pm2 stop telegram-backup-bot
 ```
 
-#### Restarting the Bot:
-To restart the bot:
+#### راه‌اندازی مجدد ربات:
+برای راه‌اندازی مجدد ربات:
 
 ```bash
 pm2 restart telegram-backup-bot
 ```
 
-#### Viewing Running Processes:
-You can check the list of processes managed by **PM2**:
+#### مشاهده فرآیندهای در حال اجرا:
+برای مشاهده لیست فرآیندهای مدیریت شده توسط **PM2**:
 
 ```bash
 pm2 list
@@ -101,41 +101,41 @@ pm2 list
 
 ---
 
-### Manual Installation (if setup script is not used):
+### نصب دستی (اگر از اسکریپت نصب استفاده نمی‌کنید):
 
-#### 1. Install System Dependencies
-For **Debian/Ubuntu**:
+#### 1. نصب وابستگی‌های سیستم
+برای **Debian/Ubuntu**:
 ```bash
 sudo apt update
 sudo apt install -y python3.8 python3.8-venv python3.8-dev python3-pip mariadb-client libmariadb-dev curl nodejs npm
 ```
 
-For **RHEL/CentOS**:
+برای **RHEL/CentOS**:
 ```bash
 sudo yum install -y python3.8 python3.8-venv python3.8-dev python3-pip mariadb curl nodejs npm
 ```
 
-#### 2. Install Python Libraries
-Install the required Python libraries using `pip`:
+#### 2. نصب کتابخانه‌های پایتون
+کتابخانه‌های مورد نیاز پایتون را با استفاده از `pip` نصب کنید:
 
 ```bash
 pip3 install -r requirements.txt
 ```
 
-#### 3. Install PM2 and Run the Bot
-Install **PM2** globally:
+#### 3. نصب PM2 و اجرای ربات
+**PM2** را به صورت سراسری نصب کنید:
 
 ```bash
 npm install pm2@latest -g
 ```
 
-Start the bot using **PM2**:
+ربات را با **PM2** اجرا کنید:
 
 ```bash
 pm2 start telegram_bot.py --name telegram-backup-bot
 ```
 
-Ensure **PM2** starts on system reboot:
+مطمئن شوید **PM2** در هنگام راه‌اندازی سیستم به صورت خودکار اجرا می‌شود:
 
 ```bash
 pm2 save
@@ -144,17 +144,17 @@ pm2 startup
 
 ---
 
-### Troubleshooting
+### رفع اشکال
 
-- **PM2 logs indicate a syntax error**: Ensure you are using Python 3.8 or higher. Some modern Python syntax (like `f-strings`) may not be compatible with older versions of Python.
-- **Bot not sending messages**: Ensure that the Telegram bot token and authorized user ID are correct. You can validate your bot token by checking [BotFather](https://t.me/BotFather).
-- **Database connection issues**: Double-check that your MySQL credentials are correct and that the MySQL server is running.
-
----
-
-### Contribution
-Feel free to contribute to the project by submitting issues or pull requests on GitHub. For any questions, refer to the repository documentation or reach out via the issues section.
+- **خطای syntax در لاگ‌های PM2**: مطمئن شوید که از Python 3.8 یا بالاتر استفاده می‌کنید. برخی از دستورات جدید پایتون (مانند `f-strings`) ممکن است با نسخه‌های قدیمی‌تر سازگار نباشند.
+- **ارسال نکردن پیام توسط ربات**: مطمئن شوید که توکن ربات تلگرام و آیدی عددی کاربر مجاز درست وارد شده‌اند. می‌توانید اعتبار توکن ربات خود را از طریق [BotFather](https://t.me/BotFather) بررسی کنید.
+- **مشکلات اتصال به دیتابیس**: مطمئن شوید که اطلاعات ورود به MySQL صحیح است و سرور MySQL در حال اجرا است.
 
 ---
 
-This is how you can set up, run, and manage your Telegram backup bot on a Linux server with automated scheduling and backup delivery.
+### مشارکت
+می‌توانید با ارائه مشکلات یا درخواست‌های pull در GitHub به این پروژه کمک کنید. برای هرگونه سوال به مستندات مخزن مراجعه کنید یا از بخش issues سوالات خود را مطرح کنید.
+
+---
+
+این راهنمایی به شما نشان می‌دهد که چگونه ربات پشتیبان‌گیری تلگرام را در سرور لینوکسی خود با زمان‌بندی خودکار و ارسال فایل‌های پشتیبان راه‌اندازی و مدیریت کنید.
