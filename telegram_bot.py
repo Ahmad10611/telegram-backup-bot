@@ -12,13 +12,27 @@ import zipfile
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 import jdatetime
+import configparser
+
+# خواندن فایل کانفیگ
+config = configparser.ConfigParser()
+config.read('config.cfg')
+
+# گرفتن مقادیر از فایل config.cfg
+TELEGRAM_TOKEN = config['DEFAULT']['TELEGRAM_TOKEN']
+AUTHORIZED_USER_ID = int(config['DEFAULT']['AUTHORIZED_USER_ID'])  # باید به عدد تبدیل شود
+db_config = {
+    'host': config['DEFAULT']['DB_HOST'],
+    'user': config['DEFAULT']['DB_USER'],
+    'password': config['DEFAULT']['DB_PASSWORD'],
+    'database': config['DEFAULT']['DB_NAME']
+}
 
 # تنظیمات لاگر
 log_dir = "/root/backups/logs"
 if not os.path.exists(log_dir):
     os.makedirs(log_dir, mode=0o700)
 
-# استفاده از قالب‌بندی قدیمی برای جلوگیری از خطای SyntaxError
 log_file = "{}/backup_log_{}.log".format(log_dir, datetime.now().strftime('%Y%m%d_%H%M%S'))
 
 logging.basicConfig(
@@ -27,20 +41,6 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )
-
-# آیدی عددی مجاز (آیدی شما)
-AUTHORIZED_USER_ID = 5085737770  # آیدی عددی تلگرام شما
-
-# اطلاعات اتصال به دیتابیس
-db_config = {
-    'host': 'localhost',
-    'user': 'sql_ddr_drmobile',
-    'password': 'f25c042a75c29',
-    'database': 'sql_ddr_drmobile'
-}
-
-# توکن ربات تلگرام شما
-TELEGRAM_TOKEN = '6788701278:AAFYp8eAixecU3aFro8AYo256sSIMBeRyW8'
 
 # ایجاد شیء Scheduler
 scheduler = AsyncIOScheduler()
@@ -129,4 +129,14 @@ def main():
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(
+    application.add_handler(CallbackQueryHandler(button))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+    # شروع زمان‌بندی
+    scheduler.start()
+
+    # اجرای ربات
+    application.run_polling()
+
+if __name__ == '__main__':
+    main()
