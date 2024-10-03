@@ -1,5 +1,23 @@
 #!/bin/bash
 
+# تابع نصب بسته‌های مورد نیاز برای توزیع‌های مختلف
+install_dependencies() {
+    if [ -f /etc/debian_version ]; then
+        echo "Debian/Ubuntu detected. Installing dependencies..."
+        sudo apt update
+        sudo apt install -y python3 python3-pip mysql-client libmysqlclient-dev
+    elif [ -f /etc/redhat-release ]; then
+        echo "CentOS/RHEL detected. Installing dependencies..."
+        sudo yum install -y python3 python3-pip mariadb mariadb-devel
+    elif [ -f /etc/arch-release ]; then
+        echo "Arch Linux detected. Installing dependencies..."
+        sudo pacman -Syu --noconfirm python3 python-pip mariadb
+    else
+        echo "Unsupported Linux distribution. Please install dependencies manually."
+        exit 1
+    fi
+}
+
 # استعلام اطلاعات از کاربر
 echo "Please enter your Telegram bot token:"
 read telegram_token
@@ -31,6 +49,10 @@ EOT
 
 # نصب وابستگی‌ها
 echo "Installing dependencies..."
+install_dependencies
+
+# نصب کتابخانه‌های Python از فایل requirements.txt
+echo "Installing Python libraries..."
 pip3 install -r requirements.txt
 
 # اجرای ربات
