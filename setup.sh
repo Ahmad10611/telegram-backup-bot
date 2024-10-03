@@ -35,10 +35,18 @@ echo "Installing dependencies..."
 if [ -x "$(command -v apt)" ]; then
     echo "Debian/Ubuntu detected. Installing dependencies..."
     apt update
-    apt install -y python3 python3-pip mariadb-client libmariadb-dev nodejs npm
+    apt install -y python3 python3-pip mariadb-client libmariadb-dev curl
+    
+    # نصب Node.js نسخه 16 یا بالاتر
+    curl -sL https://deb.nodesource.com/setup_16.x | bash -
+    apt install -y nodejs
 elif [ -x "$(command -v yum)" ]; then
     echo "RHEL/CentOS detected. Installing dependencies..."
-    yum install -y python3 python3-pip mariadb nodejs npm
+    yum install -y python3 python3-pip mariadb curl
+
+    # نصب Node.js نسخه 16 یا بالاتر
+    curl -sL https://rpm.nodesource.com/setup_16.x | bash -
+    yum install -y nodejs
 else
     echo "Unsupported OS. Please install dependencies manually."
     exit 1
