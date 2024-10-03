@@ -30,92 +30,58 @@ DB_NAME=${db_name}
 DB_HOST=${db_host}
 EOT
 
-# تابع بررسی نصب شدن یک دستور
-check_command() {
-    if ! command -v $1 &> /dev/null
-    then
-        echo "$1 could not be found, attempting to install..."
-        return 1
-    else
-        return 0
-    fi
-}
+# بررسی سیستم‌عامل و نصب وابستگی‌ها
+echo "Checking operating system and installing dependencies..."
+if [ -x "$(command -v apt)" ]; then
+    echo "Debian/Ubuntu detected. Installing dependencies..."
+    apt update
+    apt install -y python3 python3-pip mariadb-client libmariadb-dev curl
 
-# نصب بسته‌ها و رفع خودکار خطاها
-install_dependencies() {
-    echo "Checking and installing dependencies..."
+    # نصب نسخه درست Node.js
+    curl -sL https://deb.nodesource.com/setup_18.x | bash -
+    apt install -y nodejs
+elif [ -x "$(command -v yum)" ]; then
+    echo "RHEL/CentOS detected. Installing dependencies..."
+    yum install -y python3 python3-pip mariadb curl
 
-    # شناسایی سیستم‌عامل
+    # نصب نسخه درست Node.js
+    curl -sL https://rpm.nodesource.com/setup_18.x | bash -
+    yum install -y nodejs
+else
+    echo "Unsupported OS. Please install dependencies manually."
+    exit 1
+fi
+
+# بررسی و نصب Python 3.8 در صورت نیاز
+if ! python3.8 --version &>/dev/null; then
+    echo "Python 3.8 not found, installing..."
     if [ -x "$(command -v apt)" ]; then
-        echo "Debian/Ubuntu detected."
-        apt update
-
-        # نصب بسته‌های مورد نیاز
-        apt install -y python3 python3-pip mariadb-client libmariadb-dev curl
-
-        # نصب Node.js 18
-        curl -sL https://deb.nodesource.com/setup_18.x | bash -
-        apt install -y nodejs
-
+        apt install -y python3.8 python3.8-venv python3.8-dev
     elif [ -x "$(command -v yum)" ]; then
-        echo "RHEL/CentOS detected."
-        yum install -y python3 python3-pip mariadb curl
-
-        # نصب Node.js 18
-        curl -sL https://rpm.nodesource.com/setup_18.x | bash -
-        yum install -y nodejs
-
-        # بررسی Python 3.8 و نصب در صورت نبودن
-        check_command python3.8
-        if [ $? -ne 0 ]; then
-            echo "Python 3.8 not found, installing..."
-            yum install -y centos-release-scl
-            yum install -y rh-python38
-            source /opt/rh/rh-python38/enable
-        fi
-
-    else
-        echo "Unsupported OS. Please install dependencies manually."
-        exit 1
+        yum install -y centos-release-scl
+        yum install -y rh-python38
+        source /opt/rh/rh-python38/enable
     fi
-}
+else
+    echo "Python 3.8 already installed."
+fi
 
-# نصب کتابخانه‌های پایتون و رفع مشکلات احتمالی
-install_python_libraries() {
-    echo "Installing Python libraries..."
-    if ! pip3 install -r requirements.txt; then
-        echo "Error installing Python libraries. Attempting to resolve..."
-        pip3 install --upgrade pip
-        pip3 install -r requirements.txt
-    fi
-}
+# نصب کتابخانه‌های پایتون
+echo "Installing Python libraries..."
+pip3 install --upgrade pip
+pip3 install -r requirements.txt || { echo "Error installing Python libraries."; exit 1; }
 
 # نصب و تنظیم PM2
-install_pm2() {
-    echo "Installing PM2..."
-    if ! npm install pm2@latest -g; then
-        echo "PM2 installation failed. Retrying..."
-        npm cache clean -f
-        npm install -g n
-        npm install pm2@latest -g
-    fi
-}
+echo "Installing PM2..."
+npm install pm2@latest -g || { echo "Error installing PM2."; exit 1; }
 
 # اجرای ربات با PM2
-run_bot_with_pm2() {
-    echo "Running the bot with PM2..."
-    pm2 start telegram_bot.py --name telegram-backup-bot
+echo "Running the bot with PM2..."
+pm2 start telegram_bot.py --interpreter python3.8 --name telegram-backup-bot || { echo "Error starting the bot with PM2."; exit 1; }
 
-    # ذخیره فرآیند PM2 در سیستم‌عامل
-    pm2 save
-    pm2 startup
-}
-
-# اجرای کلیه توابع
-install_dependencies
-install_python_libraries
-install_pm2
-run_bot_with_pm2
+# ذخیره فرآیند PM2 در سیستم‌عامل برای اجرا در زمان بوت
+pm2 save
+pm2 startup || { echo "Error setting up PM2 to run on startup."; exit 1; }
 
 echo "The bot has been successfully started and added to PM2."
 echo "Use 'pm2 logs telegram-backup-bot' to see the bot logs."
