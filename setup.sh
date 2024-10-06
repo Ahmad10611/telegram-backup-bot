@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# تغییر دایرکتوری به مسیر پروژه
+cd "$(dirname "$0")"
+
 # شناسایی سیستم عامل
 OS=$(cat /etc/os-release | grep -w ID | cut -d '=' -f 2 | tr -d '"')
 
