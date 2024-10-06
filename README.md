@@ -1,12 +1,3 @@
-در اینجا کد نهایی شما با بخش‌های کلیکی برای انتخاب زبان (فارسی، انگلیسی، چینی) آمده است:
-
-```markdown
-### 📦 Telegram Backup Bot - Multilingual Guide
-
-#### [🇮🇷 فارسی](#فارسی) | [🌍 English](#english) | [📦 简体中文](#中文)
-
-<details id="فارسی">
-  <summary>🇮🇷 فارسی</summary>
 
 ### 📦 ربات پشتیبان‌گیری تلگرام - راهنمای خلاصه
 
@@ -70,10 +61,7 @@
   systemctl reset-failed
   ```
 
-</details>
-
-<details id="english">
-  <summary>🌍 English</summary>
+---
 
 ### 🌍 Telegram Backup Bot - Quick Guide
 
@@ -137,10 +125,7 @@ Automatically backs up MySQL and sends the files via Telegram using **systemd** 
   systemctl reset-failed
   ```
 
-</details>
-
-<details id="中文">
-  <summary>📦 简体中文</summary>
+---
 
 ### 📦 电报备份机器人 - 简要指南
 
@@ -203,10 +188,3 @@ Automatically backs up MySQL and sends the files via Telegram using **systemd** 
   systemctl daemon-reload
   systemctl reset-failed
   ```
-
-</details>
-```
-
-### توضیحات:
-- سه زبان فارسی، انگلیسی و چینی با استفاده از تگ‌های HTML و تگ‌های `details` پیاده‌سازی شده‌اند.
-- کاربران می‌توانند با کلیک بر روی هر زبان، توضیحات مربوط به آن زبان را مشاهده کنند.
