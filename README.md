@@ -1,160 +1,102 @@
-### ربات پشتیبان‌گیری تلگرام - راهنمای کامل
+### فارسی
 
-**توضیحات:**
-یک ربات تلگرام برای خودکارسازی فرآیند پشتیبان‌گیری از دیتابیس MySQL و ارسال فایل‌های پشتیبان از طریق تلگرام. این ربات به گونه‌ای طراحی شده که پشتیبان‌گیری‌های زمان‌بندی‌شده را به طور منظم انجام داده و فایل‌ها را به صورت امن از طریق API تلگرام ارسال کند. همچنین از **PM2** برای مدیریت مداوم فرآیند ربات استفاده می‌شود.
+**ربات پشتیبان‌گیری تلگرام:**
 
-### ویژگی‌های کلیدی:
-- پشتیبان‌گیری خودکار از دیتابیس MySQL.
-- ارسال خودکار فایل‌های پشتیبان از طریق تلگرام.
-- مدیریت مداوم فرآیند با **PM2**.
-- سازگار با توزیع‌های لینوکسی محبوب (Debian، Ubuntu، CentOS).
+ربات تلگرام برای پشتیبان‌گیری خودکار از دیتابیس MySQL و ارسال فایل‌های پشتیبان از طریق تلگرام. این ربات با **systemd** مدیریت می‌شود و به صورت خودکار اجرا و نظارت می‌گردد.
 
----
+#### مراحل نصب:
+1. مخزن را کلون کنید:
+   ```bash
+   git clone https://github.com/Ahmad10611/telegram-backup-bot.git
+   cd telegram-backup-bot
+   ```
 
-### نیازمندی‌ها:
-1. یک سرور لینوکسی که **Debian/Ubuntu** یا **RHEL/CentOS** را اجرا می‌کند.
-2. نصب و پیکربندی **MySQL**.
-3. **Python 3.8** یا بالاتر.
-4. **Node.js** نسخه 16 یا بالاتر برای مدیریت ربات با **PM2**.
-5. توکن ربات تلگرام و آیدی عددی کاربر مجاز (authorized user ID).
+2. اجرای اسکریپت نصب:
+   ```bash
+   chmod +x setup.sh
+   ./setup.sh
+   ```
 
----
+3. ورود اطلاعات:
+   - **توکن ربات تلگرام:** می‌توانید این توکن را از [BotFather](https://t.me/BotFather) دریافت کنید.
+   - **آیدی عددی کاربر مجاز:** این آیدی عددی تلگرام شما است که می‌توانید آن را از ربات‌هایی مانند [userinfobot](https://t.me/userinfobot) دریافت کنید.
+   - **نام کاربری MySQL:** نام کاربری دیتابیس MySQL.
+   - **رمز عبور MySQL:** رمز عبور برای دسترسی به MySQL.
+   - **نام دیتابیس MySQL:** نام دیتابیسی که قصد پشتیبان‌گیری از آن را دارید.
+   - **هاست MySQL:** معمولاً `localhost` است.
 
-### دستورالعمل‌های نصب
-
-#### 1. کلون کردن مخزن
-ابتدا مخزن ربات را به سرور خود کلون کنید:
-
-```bash
-git clone https://github.com/Ahmad10611/telegram-backup-bot.git
-cd telegram-backup-bot
-```
-
-#### 2. اجرای اسکریپت نصب
-اسکریپت نصب تمام وابستگی‌ها را نصب می‌کند، اطلاعات لازم را از شما دریافت می‌کند و ربات را با **PM2** راه‌اندازی می‌کند.
-
-```bash
-chmod +x setup.sh
-./setup.sh
-```
-
-در حین نصب، اسکریپت از شما موارد زیر را درخواست خواهد کرد:
-
-- **توکن ربات تلگرام**: می‌توانید این توکن را از [BotFather](https://t.me/BotFather) دریافت کنید.
-- **آیدی عددی کاربر مجاز**: این آیدی عددی تلگرام شما است که می‌توانید آن را از ربات‌هایی مانند [userinfobot](https://t.me/userinfobot) دریافت کنید.
-- **نام کاربری MySQL**: نام کاربری دیتابیس MySQL.
-- **رمز عبور MySQL**: رمز عبور برای دسترسی به MySQL.
-- **نام دیتابیس MySQL**: نام دیتابیسی که قصد پشتیبان‌گیری از آن را دارید.
-- **هاست MySQL**: معمولاً `localhost` است.
+4. مدیریت ربات با systemd:
+   - **مشاهده وضعیت:** `systemctl status telegram-backup-bot`
+   - **مشاهده لاگ‌ها:** `journalctl -u telegram-backup-bot -f`
+   - **متوقف کردن:** `systemctl stop telegram-backup-bot`
+   - **راه‌اندازی مجدد:** `systemctl restart telegram-backup-bot`
 
 ---
 
-### جریان نصب نمونه:
+### English
 
-```bash
-Please enter your Telegram bot token: <YOUR_BOT_TOKEN>
-Please enter the authorized user ID (your Telegram numeric ID): <YOUR_USER_ID>
-Please enter your MySQL username: <MYSQL_USER>
-Please enter your MySQL password: <MYSQL_PASSWORD>
-Please enter your MySQL database name: <MYSQL_DATABASE>
-Please enter your MySQL database host (e.g., localhost): localhost
-```
+**Telegram Backup Bot:**
 
-پس از وارد کردن اطلاعات، اسکریپت به ترتیب:
+A Telegram bot for automatic MySQL database backups and sending files via Telegram. Managed using **systemd** for automated execution and monitoring.
 
-1. وابستگی‌های سیستم (مانند `Python3.8`، `MySQL client`، `Node.js` و غیره) را نصب می‌کند.
-2. کتابخانه‌های پایتون (مانند `mysql-connector-python`، `apscheduler`، `python-telegram-bot` و غیره) را نصب می‌کند.
-3. **PM2** را نصب و پیکربندی می‌کند تا ربات به صورت مداوم اجرا شود.
-4. ربات را با استفاده از **PM2** اجرا می‌کند.
+#### Installation Steps:
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Ahmad10611/telegram-backup-bot.git
+   cd telegram-backup-bot
+   ```
 
----
+2. Run the setup script:
+   ```bash
+   chmod +x setup.sh
+   ./setup.sh
+   ```
 
-### نحوه استفاده
+3. Enter information:
+   - **Telegram bot token:** You can get this token from [BotFather](https://t.me/BotFather).
+   - **Authorized user ID:** This is your Telegram numeric ID, which can be retrieved from bots like [userinfobot](https://t.me/userinfobot).
+   - **MySQL username:** Your MySQL database username.
+   - **MySQL password:** Your MySQL password.
+   - **MySQL database name:** The name of the database you want to back up.
+   - **MySQL host:** Usually `localhost`.
 
-#### مشاهده لاگ‌های ربات:
-برای مشاهده لاگ‌های ربات (جهت نظارت یا رفع اشکال)، از دستور زیر استفاده کنید:
-
-```bash
-pm2 logs telegram-backup-bot
-```
-
-#### متوقف کردن ربات:
-برای متوقف کردن ربات در هر زمانی:
-
-```bash
-pm2 stop telegram-backup-bot
-```
-
-#### راه‌اندازی مجدد ربات:
-برای راه‌اندازی مجدد ربات:
-
-```bash
-pm2 restart telegram-backup-bot
-```
-
-#### مشاهده فرآیندهای در حال اجرا:
-برای مشاهده لیست فرآیندهای مدیریت شده توسط **PM2**:
-
-```bash
-pm2 list
-```
+4. Manage the bot with systemd:
+   - **Check status:** `systemctl status telegram-backup-bot`
+   - **View logs:** `journalctl -u telegram-backup-bot -f`
+   - **Stop bot:** `systemctl stop telegram-backup-bot`
+   - **Restart bot:** `systemctl restart telegram-backup-bot`
 
 ---
 
-### نصب دستی (اگر از اسکریپت نصب استفاده نمی‌کنید):
+### 中文
 
-#### 1. نصب وابستگی‌های سیستم
-برای **Debian/Ubuntu**:
-```bash
-sudo apt update
-sudo apt install -y python3.8 python3.8-venv python3.8-dev python3-pip mariadb-client libmariadb-dev curl nodejs npm
-```
+**Telegram 备份机器人：**
 
-برای **RHEL/CentOS**:
-```bash
-sudo yum install -y python3.8 python3.8-venv python3.8-dev python3-pip mariadb curl nodejs npm
-```
+用于自动备份 MySQL 数据库并通过 Telegram 发送文件的机器人，使用 **systemd** 进行管理，实现自动运行和监控。
 
-#### 2. نصب کتابخانه‌های پایتون
-کتابخانه‌های مورد نیاز پایتون را با استفاده از `pip` نصب کنید:
+#### 安装步骤:
+1. 克隆存储库:
+   ```bash
+   git clone https://github.com/Ahmad10611/telegram-backup-bot.git
+   cd telegram-backup-bot
+   ```
 
-```bash
-pip3 install -r requirements.txt
-```
+2. 运行安装脚本:
+   ```bash
+   chmod +x setup.sh
+   ./setup.sh
+   ```
 
-#### 3. نصب PM2 و اجرای ربات
-**PM2** را به صورت سراسری نصب کنید:
+3. 输入信息：
+   - **Telegram 机器人令牌:** 您可以从 [BotFather](https://t.me/BotFather) 获取此令牌。
+   - **授权用户 ID:** 这是您的 Telegram 数字 ID，可以从 [userinfobot](https://t.me/userinfobot) 等机器人获取。
+   - **MySQL 用户名:** 您的 MySQL 数据库用户名。
+   - **MySQL 密码:** 您的 MySQL 密码。
+   - **MySQL 数据库名称:** 您要备份的数据库名称。
+   - **MySQL 主机:** 通常为 `localhost`。
 
-```bash
-npm install pm2@latest -g
-```
-
-ربات را با **PM2** اجرا کنید:
-
-```bash
-pm2 start telegram_bot.py --name telegram-backup-bot
-```
-
-مطمئن شوید **PM2** در هنگام راه‌اندازی سیستم به صورت خودکار اجرا می‌شود:
-
-```bash
-pm2 save
-pm2 startup
-```
-
----
-
-### رفع اشکال
-
-- **خطای syntax در لاگ‌های PM2**: مطمئن شوید که از Python 3.8 یا بالاتر استفاده می‌کنید. برخی از دستورات جدید پایتون (مانند `f-strings`) ممکن است با نسخه‌های قدیمی‌تر سازگار نباشند.
-- **ارسال نکردن پیام توسط ربات**: مطمئن شوید که توکن ربات تلگرام و آیدی عددی کاربر مجاز درست وارد شده‌اند. می‌توانید اعتبار توکن ربات خود را از طریق [BotFather](https://t.me/BotFather) بررسی کنید.
-- **مشکلات اتصال به دیتابیس**: مطمئن شوید که اطلاعات ورود به MySQL صحیح است و سرور MySQL در حال اجرا است.
-
----
-
-### مشارکت
-می‌توانید با ارائه مشکلات یا درخواست‌های pull در GitHub به این پروژه کمک کنید. برای هرگونه سوال به مستندات مخزن مراجعه کنید یا از بخش issues سوالات خود را مطرح کنید.
-
----
-
-این راهنمایی به شما نشان می‌دهد که چگونه ربات پشتیبان‌گیری تلگرام را در سرور لینوکسی خود با زمان‌بندی خودکار و ارسال فایل‌های پشتیبان راه‌اندازی و مدیریت کنید.
+4. 使用 systemd 管理机器人：
+   - **查看状态:** `systemctl status telegram-backup-bot`
+   - **查看日志:** `journalctl -u telegram-backup-bot -f`
+   - **停止机器人:** `systemctl stop telegram-backup-bot`
+   - **重启机器人:** `systemctl restart telegram-backup-bot`
