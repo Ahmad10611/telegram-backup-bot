@@ -33,73 +33,55 @@ EOT
 # بررسی سیستم‌عامل و نصب وابستگی‌ها
 echo "Checking operating system and installing dependencies..."
 if [ -x "$(command -v apt)" ]; then
-    echo "Debian/Ubuntu detected. Installing dependencies..."
+    echo "Ubuntu detected. Installing dependencies..."
+
+    # حذف کتابخانه‌های قدیمی و نسخه‌های قدیمی Node.js
+    echo "Removing any previous Node.js and npm installations..."
+    apt-get remove --purge -y nodejs npm libnode72 || true
+    apt-get autoremove -y
+
+    # به‌روزرسانی مخازن و نصب پیش‌نیازها
+    echo "Updating repositories and installing prerequisites..."
     apt update
-    apt install -y python3 python3-pip mariadb-client libmariadb-dev curl
-    
-    # اگر سیستم‌عامل Ubuntu بود، از این روش استفاده می‌شود
-    . /etc/os-release
-    if [ "$ID" = "ubuntu" ]; then
-        echo "Ubuntu detected. Using the proper method for Ubuntu."
-        # نصب نسخه درست Node.js
-        curl -sL https://deb.nodesource.com/setup_18.x | bash -
-        apt install -y nodejs
-    else
-        echo "Non-Ubuntu Debian-based OS detected."
-        # نصب نسخه درست Node.js برای Debian
-        curl -sL https://deb.nodesource.com/setup_18.x | bash -
-        apt install -y nodejs
+    apt install -y python3 python3-pip mariadb-client libmariadb-dev curl ca-certificates gnupg apt-transport-https software-properties-common
+
+    # اضافه کردن مخزن Node.js و نصب نسخه 18
+    echo "Installing Node.js version 18..."
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+    apt install -y nodejs || { echo "Error installing Node.js."; exit 1; }
+
+    # بررسی نصب npm
+    if ! [ -x "$(command -v npm)" ]; then
+        echo "npm not found, installing..."
+        apt install -y npm || { echo "Error installing npm."; exit 1; }
     fi
+
+    # نصب PM2
+    echo "Installing PM2..."
+    npm install pm2@latest -g || { echo "Error installing PM2."; exit 1; }
+
 elif [ -x "$(command -v yum)" ]; then
     echo "RHEL/CentOS detected. Installing dependencies..."
     yum install -y python3 python3-pip mariadb curl
 
-    # نصب نسخه درست Node.js
+    # نصب Node.js نسخه 18
     curl -sL https://rpm.nodesource.com/setup_18.x | bash -
-    yum install -y nodejs || { echo "Error installing Node.js, skipping..."; }
+    yum install -y nodejs || { echo "Error installing Node.js."; exit 1; }
 else
     echo "Unsupported OS. Please install dependencies manually."
     exit 1
 fi
 
-# بررسی و نصب Python 3.8 در صورت نیاز
-if ! python3.8 --version &>/dev/null; then
-    echo "Python 3.8 not found, installing..."
-    if [ -x "$(command -v apt)" ]; then
-        apt install -y python3.8 python3.8-venv python3.8-dev
-    elif [ -x "$(command -v yum)" ]; then
-        yum install -y centos-release-scl
-        yum install -y rh-python38
-        source /opt/rh/rh-python38/enable
-    fi
-else
-    echo "Python 3.8 already installed."
-fi
-
-# اطمینان از نصب pip صحیح
-if ! [ -x "$(command -v pip3)" ]; then
-    echo "pip3 not found, installing..."
-    python3 -m ensurepip --upgrade || { echo "Error installing pip3."; exit 1; }
-else
-    echo "pip3 already installed."
-fi
-
-# به‌روز رسانی pip به آخرین نسخه
+# به‌روز رسانی pip و نصب کتابخانه‌های پایتون
 pip3 install --upgrade pip
-
-# نصب کتابخانه‌های پایتون
 echo "Installing Python libraries..."
 pip3 install -r requirements.txt || { echo "Error installing Python libraries."; exit 1; }
 
-# نصب و تنظیم PM2
-echo "Installing PM2..."
-npm install pm2@latest -g || { echo "Error installing PM2."; exit 1; }
-
 # اجرای ربات با PM2
 echo "Running the bot with PM2..."
-pm2 start telegram_bot.py --interpreter python3.8 --name telegram-backup-bot || { echo "Error starting the bot with PM2."; exit 1; }
+pm2 start telegram_bot.py --interpreter python3 --name telegram-backup-bot || { echo "Error starting the bot with PM2."; exit 1; }
 
-# ذخیره فرآیند PM2 در سیستم‌عامل برای اجرا در زمان بوت
+# ذخیره فرآیند PM2 برای اجرا در زمان بوت
 pm2 save
 pm2 startup || { echo "Error setting up PM2 to run on startup."; exit 1; }
 
