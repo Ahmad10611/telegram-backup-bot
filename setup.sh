@@ -22,27 +22,37 @@ DB_NAME=$MYSQL_DB
 DB_HOST=$MYSQL_HOST
 EOL
 
-# نصب پیش‌نیازها بر اساس سیستم عامل
+# نصب پیش‌نیازها و Python 3.8 برای سیستم عامل‌های مختلف
 if [[ "$OS" == "ubuntu" || "$OS" == "debian" ]]; then
-    echo "Ubuntu or Debian detected. Installing dependencies..."
-    apt update -y
-    apt install -y curl python3-pip mariadb-client libmariadb-dev build-essential libssl-dev zlib1g-dev libncurses5-dev libnss3-dev libreadline-dev libffi-dev wget
+    echo "Ubuntu or Debian detected. Installing dependencies and Python 3.8..."
+
+    # نصب وابستگی‌ها و Python 3.8
+    sudo apt update -y
+    sudo apt install -y software-properties-common
+    sudo add-apt-repository ppa:deadsnakes/ppa -y
+    sudo apt update -y
+    sudo apt install -y python3.8 python3.8-venv python3.8-dev python3-pip mariadb-client libmariadb-dev
+
+    # تنظیم Python 3.8 به عنوان پیش‌فرض
+    sudo update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.8 1
 
 elif [[ "$OS" == "centos" || "$OS" == "rhel" ]]; then
     echo "CentOS or RHEL detected. Installing dependencies and Python 3.8..."
-    yum update -y
-    yum install -y gcc openssl-devel bzip2-devel libffi-devel curl wget make
+
+    # نصب وابستگی‌ها و Python 3.8
+    sudo yum update -y
+    sudo yum install -y gcc openssl-devel bzip2-devel libffi-devel wget make
 
     # دانلود و نصب Python 3.8
     cd /usr/src
-    wget https://www.python.org/ftp/python/3.8.10/Python-3.8.10.tgz
-    tar xzf Python-3.8.10.tgz
+    sudo wget https://www.python.org/ftp/python/3.8.10/Python-3.8.10.tgz
+    sudo tar xzf Python-3.8.10.tgz
     cd Python-3.8.10
-    ./configure --enable-optimizations
-    make altinstall
+    sudo ./configure --enable-optimizations
+    sudo make altinstall
 
     # تنظیم Python 3.8 به عنوان پیش‌فرض
-    ln -sf /usr/local/bin/python3.8 /usr/bin/python3
+    sudo ln -sf /usr/local/bin/python3.8 /usr/bin/python3
 
 else
     echo "Unsupported operating system: $OS"
@@ -52,7 +62,7 @@ fi
 # بررسی نسخه Python
 python3 --version
 
-# نصب pip3 برای Python 3.8 (در صورتی که از قبل نصب نشده باشد)
+# نصب pip برای Python 3.8 (در صورتی که از قبل نصب نشده باشد)
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 python3 get-pip.py
 
@@ -78,9 +88,9 @@ WantedBy=multi-user.target
 EOL
 
 # بارگذاری مجدد systemd برای سرویس جدید و فعال کردن آن
-systemctl daemon-reload
-systemctl enable telegram-backup-bot.service
-systemctl start telegram-backup-bot.service
+sudo systemctl daemon-reload
+sudo systemctl enable telegram-backup-bot.service
+sudo systemctl start telegram-backup-bot.service
 
 # بررسی وضعیت سرویس
-systemctl status telegram-backup-bot.service
+sudo systemctl status telegram-backup-bot.service
