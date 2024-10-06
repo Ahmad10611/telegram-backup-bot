@@ -36,10 +36,20 @@ if [ -x "$(command -v apt)" ]; then
     echo "Debian/Ubuntu detected. Installing dependencies..."
     apt update
     apt install -y python3 python3-pip mariadb-client libmariadb-dev curl
-
-    # نصب نسخه درست Node.js
-    curl -sL https://deb.nodesource.com/setup_18.x | bash -
-    apt install -y nodejs
+    
+    # اگر سیستم‌عامل Ubuntu بود، از این روش استفاده می‌شود
+    . /etc/os-release
+    if [ "$ID" = "ubuntu" ]; then
+        echo "Ubuntu detected. Using the proper method for Ubuntu."
+        # نصب نسخه درست Node.js
+        curl -sL https://deb.nodesource.com/setup_18.x | bash -
+        apt install -y nodejs
+    else
+        echo "Non-Ubuntu Debian-based OS detected."
+        # نصب نسخه درست Node.js برای Debian
+        curl -sL https://deb.nodesource.com/setup_18.x | bash -
+        apt install -y nodejs
+    fi
 elif [ -x "$(command -v yum)" ]; then
     echo "RHEL/CentOS detected. Installing dependencies..."
     yum install -y python3 python3-pip mariadb curl
