@@ -11,17 +11,18 @@ read -p "Please enter your MySQL password: " MYSQL_PASSWORD
 read -p "Please enter your MySQL database name: " MYSQL_DB
 read -p "Please enter your MySQL database host (e.g., localhost): " MYSQL_HOST
 
-# تنظیم پیکربندی‌ها در فایل config.cfg
+# ایجاد فایل config.cfg و نوشتن مقادیر در آن
 cat <<EOL >config.cfg
+[DEFAULT]
 BOT_TOKEN=$BOT_TOKEN
 AUTHORIZED_USER_ID=$AUTHORIZED_USER_ID
-MYSQL_USER=$MYSQL_USER
-MYSQL_PASSWORD=$MYSQL_PASSWORD
-MYSQL_DB=$MYSQL_DB
-MYSQL_HOST=$MYSQL_HOST
+DB_USER=$MYSQL_USER
+DB_PASSWORD=$MYSQL_PASSWORD
+DB_NAME=$MYSQL_DB
+DB_HOST=$MYSQL_HOST
 EOL
 
-# نصب پیش‌نیازها
+# نصب پیش‌نیازها بر اساس سیستم عامل
 if [[ "$OS" == "ubuntu" || "$OS" == "debian" ]]; then
     echo "Ubuntu or Debian detected. Installing dependencies..."
     apt update -y
@@ -37,10 +38,10 @@ else
     exit 1
 fi
 
-# نصب کتابخانه‌های پایتون
+# نصب وابستگی‌های پایتون از فایل requirements.txt
 pip3 install -r requirements.txt
 
-# ایجاد سرویس systemd
+# ایجاد سرویس systemd برای اجرای ربات به عنوان سرویس
 cat <<EOL >/etc/systemd/system/telegram-backup-bot.service
 [Unit]
 Description=Telegram Backup Bot
@@ -58,7 +59,7 @@ User=root
 WantedBy=multi-user.target
 EOL
 
-# بارگذاری مجدد systemd و فعال کردن سرویس
+# بارگذاری مجدد systemd برای سرویس جدید و فعال کردن آن
 systemctl daemon-reload
 systemctl enable telegram-backup-bot.service
 systemctl start telegram-backup-bot.service
