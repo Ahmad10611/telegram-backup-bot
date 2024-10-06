@@ -18,15 +18,23 @@ import configparser
 config = configparser.ConfigParser()
 config.read('config.cfg')
 
+# بررسی محتوای فایل کانفیگ (دیباگ)
+print(config.sections())  # این خط بخش‌های کانفیگ را نمایش می‌دهد
+
 # گرفتن مقادیر از فایل config.cfg
-TELEGRAM_TOKEN = config['DEFAULT']['TELEGRAM_TOKEN']
-AUTHORIZED_USER_ID = int(config['DEFAULT']['AUTHORIZED_USER_ID'])  # باید به عدد تبدیل شود
-db_config = {
-    'host': config['DEFAULT']['DB_HOST'],
-    'user': config['DEFAULT']['DB_USER'],
-    'password': config['DEFAULT']['DB_PASSWORD'],
-    'database': config['DEFAULT']['DB_NAME']
-}
+try:
+    TELEGRAM_TOKEN = config['DEFAULT']['BOT_TOKEN']
+    AUTHORIZED_USER_ID = int(config['DEFAULT']['AUTHORIZED_USER_ID'])  # باید به عدد تبدیل شود
+    db_config = {
+        'host': config['DEFAULT']['DB_HOST'],
+        'user': config['DEFAULT']['DB_USER'],
+        'password': config['DEFAULT']['DB_PASSWORD'],
+        'database': config['DEFAULT']['DB_NAME']
+    }
+    print("Config loaded successfully!")  # نمایش پیغام موفقیت‌آمیز بودن خواندن کانفیگ
+except KeyError as e:
+    print(f"Error: Key {e} not found in config.cfg")
+    exit(1)
 
 # تنظیمات لاگر
 log_dir = "/root/backups/logs"
