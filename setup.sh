@@ -66,8 +66,14 @@ python3 --version
 curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 python3 get-pip.py
 
+# بررسی اینکه فایل requirements.txt وجود دارد
+if [ ! -f "requirements.txt" ]; then
+    echo "Error: requirements.txt file not found!"
+    exit 1
+fi
+
 # نصب وابستگی‌های پایتون از فایل requirements.txt
-pip3 install -r requirements.txt
+pip3 install -r requirements.txt || { echo "Failed to install dependencies from requirements.txt"; exit 1; }
 
 # ایجاد سرویس systemd برای اجرای ربات به عنوان سرویس
 cat <<EOL >/etc/systemd/system/telegram-backup-bot.service
