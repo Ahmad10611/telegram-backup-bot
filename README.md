@@ -186,4 +186,3 @@ Automatically backs up MySQL and sends the files via Telegram using **systemd** 
   rm /etc/systemd/system/telegram-backup-bot.service
   systemctl daemon-reload
   systemctl reset-failed
-  ```
