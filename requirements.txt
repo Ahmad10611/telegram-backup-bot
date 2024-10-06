@@ -1,6 +1,4 @@
-mysql-connector-python==9.0.0
+mysql-connector-python==8.0.33
 apscheduler==3.10.4
-python-telegram-bot==21.6
-pytz==2024.2
+python-telegram-bot==20.3
 jdatetime==3.7.0
-tzlocal==5.2
