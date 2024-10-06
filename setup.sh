@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # شناسایی سیستم عامل
-OS=$(cat /etc/os-release | grep -w ID | cut -d '=' -f 2)
+OS=$(cat /etc/os-release | grep -w ID | cut -d '=' -f 2 | tr -d '"')
 
 # دریافت اطلاعات لازم از کاربر
 read -p "Please enter your Telegram bot token: " BOT_TOKEN
@@ -22,15 +22,16 @@ MYSQL_HOST=$MYSQL_HOST
 EOL
 
 # نصب پیش‌نیازها
-if [ "$OS" == "ubuntu" ]; then
-    echo "Ubuntu detected. Installing dependencies..."
+if [[ "$OS" == "ubuntu" || "$OS" == "debian" ]]; then
+    echo "Ubuntu or Debian detected. Installing dependencies..."
     apt update -y
     apt install -y curl python3-pip mariadb-client libmariadb-dev
 
-elif [ "$OS" == "centos" ]; then
-    echo "CentOS detected. Installing dependencies..."
+elif [[ "$OS" == "centos" || "$OS" == "rhel" ]]; then
+    echo "CentOS or RHEL detected. Installing dependencies..."
     yum update -y
     yum install -y curl python3-pip mariadb mariadb-devel
+
 else
     echo "Unsupported operating system: $OS"
     exit 1
