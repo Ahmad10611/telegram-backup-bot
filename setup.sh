@@ -26,17 +26,35 @@ EOL
 if [[ "$OS" == "ubuntu" || "$OS" == "debian" ]]; then
     echo "Ubuntu or Debian detected. Installing dependencies..."
     apt update -y
-    apt install -y curl python3-pip mariadb-client libmariadb-dev
+    apt install -y curl python3-pip mariadb-client libmariadb-dev build-essential libssl-dev zlib1g-dev libncurses5-dev libnss3-dev libreadline-dev libffi-dev wget
 
 elif [[ "$OS" == "centos" || "$OS" == "rhel" ]]; then
-    echo "CentOS or RHEL detected. Installing dependencies..."
+    echo "CentOS or RHEL detected. Installing dependencies and Python 3.8..."
     yum update -y
-    yum install -y curl python3-pip mariadb mariadb-devel
+    yum install -y gcc openssl-devel bzip2-devel libffi-devel curl wget make
+
+    # دانلود و نصب Python 3.8
+    cd /usr/src
+    wget https://www.python.org/ftp/python/3.8.10/Python-3.8.10.tgz
+    tar xzf Python-3.8.10.tgz
+    cd Python-3.8.10
+    ./configure --enable-optimizations
+    make altinstall
+
+    # تنظیم Python 3.8 به عنوان پیش‌فرض
+    ln -sf /usr/local/bin/python3.8 /usr/bin/python3
 
 else
     echo "Unsupported operating system: $OS"
     exit 1
 fi
+
+# بررسی نسخه Python
+python3 --version
+
+# نصب pip3 برای Python 3.8 (در صورتی که از قبل نصب نشده باشد)
+curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+python3 get-pip.py
 
 # نصب وابستگی‌های پایتون از فایل requirements.txt
 pip3 install -r requirements.txt
