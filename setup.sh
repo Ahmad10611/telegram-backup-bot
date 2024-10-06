@@ -11,14 +11,15 @@ read -p "Please enter your MySQL password: " MYSQL_PASSWORD
 read -p "Please enter your MySQL database name: " MYSQL_DB
 read -p "Please enter your MySQL database host (e.g., localhost): " MYSQL_HOST
 
-# تنظیم پیکربندی‌ها در فایل config.cfg
+# تنظیم پیکربندی‌ها در فایل config.cfg با اضافه کردن بخش [DEFAULT]
 cat <<EOL >config.cfg
+[DEFAULT]
 BOT_TOKEN=$BOT_TOKEN
 AUTHORIZED_USER_ID=$AUTHORIZED_USER_ID
-MYSQL_USER=$MYSQL_USER
-MYSQL_PASSWORD=$MYSQL_PASSWORD
-MYSQL_DB=$MYSQL_DB
-MYSQL_HOST=$MYSQL_HOST
+DB_USER=$MYSQL_USER
+DB_PASSWORD=$MYSQL_PASSWORD
+DB_NAME=$MYSQL_DB
+DB_HOST=$MYSQL_HOST
 EOL
 
 # نصب پیش‌نیازها
