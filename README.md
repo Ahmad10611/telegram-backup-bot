@@ -1,102 +1,189 @@
-### فارسی
+### 📦 ربات پشتیبان‌گیری تلگرام - راهنمای خلاصه
 
-**ربات پشتیبان‌گیری تلگرام:**
-
-ربات تلگرام برای پشتیبان‌گیری خودکار از دیتابیس MySQL و ارسال فایل‌های پشتیبان از طریق تلگرام. این ربات با **systemd** مدیریت می‌شود و به صورت خودکار اجرا و نظارت می‌گردد.
-
-#### مراحل نصب:
-1. مخزن را کلون کنید:
-   ```bash
-   git clone https://github.com/Ahmad10611/telegram-backup-bot.git
-   cd telegram-backup-bot
-   ```
-
-2. اجرای اسکریپت نصب:
-   ```bash
-   chmod +x setup.sh
-   ./setup.sh
-   ```
-
-3. ورود اطلاعات:
-   - **توکن ربات تلگرام:** می‌توانید این توکن را از [BotFather](https://t.me/BotFather) دریافت کنید.
-   - **آیدی عددی کاربر مجاز:** این آیدی عددی تلگرام شما است که می‌توانید آن را از ربات‌هایی مانند [userinfobot](https://t.me/userinfobot) دریافت کنید.
-   - **نام کاربری MySQL:** نام کاربری دیتابیس MySQL.
-   - **رمز عبور MySQL:** رمز عبور برای دسترسی به MySQL.
-   - **نام دیتابیس MySQL:** نام دیتابیسی که قصد پشتیبان‌گیری از آن را دارید.
-   - **هاست MySQL:** معمولاً `localhost` است.
-
-4. مدیریت ربات با systemd:
-   - **مشاهده وضعیت:** `systemctl status telegram-backup-bot`
-   - **مشاهده لاگ‌ها:** `journalctl -u telegram-backup-bot -f`
-   - **متوقف کردن:** `systemctl stop telegram-backup-bot`
-   - **راه‌اندازی مجدد:** `systemctl restart telegram-backup-bot`
+**توضیحات:**
+این ربات به طور خودکار از دیتابیس MySQL پشتیبان تهیه می‌کند و فایل‌های پشتیبان را از طریق تلگرام ارسال می‌کند. **systemd** برای مدیریت و اجرای خودکار ربات استفاده می‌شود.
 
 ---
 
-### English
-
-**Telegram Backup Bot:**
-
-A Telegram bot for automatic MySQL database backups and sending files via Telegram. Managed using **systemd** for automated execution and monitoring.
-
-#### Installation Steps:
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Ahmad10611/telegram-backup-bot.git
-   cd telegram-backup-bot
-   ```
-
-2. Run the setup script:
-   ```bash
-   chmod +x setup.sh
-   ./setup.sh
-   ```
-
-3. Enter information:
-   - **Telegram bot token:** You can get this token from [BotFather](https://t.me/BotFather).
-   - **Authorized user ID:** This is your Telegram numeric ID, which can be retrieved from bots like [userinfobot](https://t.me/userinfobot).
-   - **MySQL username:** Your MySQL database username.
-   - **MySQL password:** Your MySQL password.
-   - **MySQL database name:** The name of the database you want to back up.
-   - **MySQL host:** Usually `localhost`.
-
-4. Manage the bot with systemd:
-   - **Check status:** `systemctl status telegram-backup-bot`
-   - **View logs:** `journalctl -u telegram-backup-bot -f`
-   - **Stop bot:** `systemctl stop telegram-backup-bot`
-   - **Restart bot:** `systemctl restart telegram-backup-bot`
+### نیازمندی‌ها:
+1. سرور لینوکسی (Ubuntu، Debian، CentOS)
+2. نصب MySQL و Python 3.8+
+3. توکن ربات تلگرام از [BotFather](https://t.me/BotFather)
+4. آیدی عددی کاربر مجاز از [userinfobot](https://t.me/userinfobot)
 
 ---
 
-### 中文
+### نصب ربات:
 
-**Telegram 备份机器人：**
-
-用于自动备份 MySQL 数据库并通过 Telegram 发送文件的机器人，使用 **systemd** 进行管理，实现自动运行和监控。
-
-#### 安装步骤:
-1. 克隆存储库:
+1. **کلون کردن مخزن:**
    ```bash
    git clone https://github.com/Ahmad10611/telegram-backup-bot.git
    cd telegram-backup-bot
    ```
 
-2. 运行安装脚本:
+2. **اجرای اسکریپت نصب:**
    ```bash
    chmod +x setup.sh
    ./setup.sh
    ```
 
-3. 输入信息：
-   - **Telegram 机器人令牌:** 您可以从 [BotFather](https://t.me/BotFather) 获取此令牌。
-   - **授权用户 ID:** 这是您的 Telegram 数字 ID，可以从 [userinfobot](https://t.me/userinfobot) 等机器人获取。
-   - **MySQL 用户名:** 您的 MySQL 数据库用户名。
-   - **MySQL 密码:** 您的 MySQL 密码。
-   - **MySQL 数据库名称:** 您要备份的数据库名称。
-   - **MySQL 主机:** 通常为 `localhost`。
+3. **ورودی‌های لازم:**
+   - توکن ربات تلگرام از [BotFather](https://t.me/BotFather)
+   - آیدی عددی کاربر مجاز از [userinfobot](https://t.me/userinfobot)
+   - اطلاعات اتصال MySQL (نام کاربری، رمز عبور، دیتابیس، هاست)
 
-4. 使用 systemd 管理机器人：
-   - **查看状态:** `systemctl status telegram-backup-bot`
-   - **查看日志:** `journalctl -u telegram-backup-bot -f`
-   - **停止机器人:** `systemctl stop telegram-backup-bot`
-   - **重启机器人:** `systemctl restart telegram-backup-bot`
+---
+
+### مدیریت ربات:
+
+- **مشاهده لاگ‌ها:**  
+  ```bash
+  journalctl -u telegram-backup-bot.service -f
+  ```
+
+- **توقف ربات:**  
+  ```bash
+  systemctl stop telegram-backup-bot
+  ```
+
+- **راه‌اندازی مجدد ربات:**  
+  ```bash
+  systemctl restart telegram-backup-bot
+  ```
+
+- **حذف ربات:**  
+  ```bash
+  systemctl stop telegram-backup-bot
+  systemctl disable telegram-backup-bot
+  rm /etc/systemd/system/telegram-backup-bot.service
+  systemctl daemon-reload
+  systemctl reset-failed
+  ```
+
+---
+
+### 🌍 Telegram Backup Bot - Quick Guide
+
+**Overview:**
+Automatically backs up MySQL and sends the files via Telegram using **systemd** for process management.
+
+---
+
+### Requirements:
+1. Linux server (Ubuntu, Debian, CentOS)
+2. MySQL and Python 3.8+
+3. Telegram Bot Token from [BotFather](https://t.me/BotFather)
+4. Authorized User ID from [userinfobot](https://t.me/userinfobot)
+
+---
+
+### Bot Installation:
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Ahmad10611/telegram-backup-bot.git
+   cd telegram-backup-bot
+   ```
+
+2. **Run the setup script:**
+   ```bash
+   chmod +x setup.sh
+   ./setup.sh
+   ```
+
+3. **Required inputs:**
+   - Telegram Bot Token from [BotFather](https://t.me/BotFather)
+   - Authorized User ID from [userinfobot](https://t.me/userinfobot)
+   - MySQL connection info (username, password, database, host)
+
+---
+
+### Bot Management:
+
+- **View logs:**  
+  ```bash
+  journalctl -u telegram-backup-bot.service -f
+  ```
+
+- **Stop bot:**  
+  ```bash
+  systemctl stop telegram-backup-bot
+  ```
+
+- **Restart bot:**  
+  ```bash
+  systemctl restart telegram-backup-bot
+  ```
+
+- **Remove bot:**  
+  ```bash
+  systemctl stop telegram-backup-bot
+  systemctl disable telegram-backup-bot
+  rm /etc/systemd/system/telegram-backup-bot.service
+  systemctl daemon-reload
+  systemctl reset-failed
+  ```
+
+---
+
+### 📦 电报备份机器人 - 简要指南
+
+**概述:**
+自动备份 MySQL 并通过 Telegram 发送，使用 **systemd** 管理进程。
+
+---
+
+### 要求:
+1. Linux服务器 (Ubuntu, Debian, CentOS)
+2. MySQL 和 Python 3.8+
+3. Telegram 机器人令牌来自 [BotFather](https://t.me/BotFather)
+4. 授权用户ID来自 [userinfobot](https://t.me/userinfobot)
+
+---
+
+### 安装机器人:
+
+1. **克隆仓库:**
+   ```bash
+   git clone https://github.com/Ahmad10611/telegram-backup-bot.git
+   cd telegram-backup-bot
+   ```
+
+2. **运行安装脚本:**
+   ```bash
+   chmod +x setup.sh
+   ./setup.sh
+   ```
+
+3. **输入信息:**
+   - Telegram 机器人令牌来自 [BotFather](https://t.me/BotFather)
+   - 授权用户ID来自 [userinfobot](https://t.me/userinfobot)
+   - MySQL 连接信息 (用户名, 密码, 数据库, 主机)
+
+---
+
+### 机器人管理:
+
+- **查看日志:**  
+  ```bash
+  journalctl -u telegram-backup-bot.service -f
+  ```
+
+- **停止机器人:**  
+  ```bash
+  systemctl stop telegram-backup-bot
+  ```
+
+- **重启机器人:**  
+  ```bash
+  systemctl restart telegram-backup-bot
+  ```
+
+- **删除机器人:**  
+  ```bash
+  systemctl stop telegram-backup-bot
+  systemctl disable telegram-backup-bot
+  rm /etc/systemd/system/telegram-backup-bot.service
+  systemctl daemon-reload
+  systemctl reset-failed
+  ```
