@@ -120,7 +120,7 @@ Automatically backs up MySQL and sends the files via Telegram using **systemd** 
   ```bash
   systemctl stop telegram-backup-bot
   systemctl disable telegram-backup-bot
-  rm /etc/systemd/system/telegram-backup-bot.service
+  rm -f /etc/systemd/system/telegram-backup-bot.service
   systemctl daemon-reload
   systemctl reset-failed
   ```
