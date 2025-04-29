@@ -1,4 +1,11 @@
-mysql-connector-python==8.0.33
-apscheduler==3.10.4
-python-telegram-bot==20.3
-jdatetime==3.7.0
+mysql-connector-python>=8.0.33
+apscheduler>=3.10.4
+python-telegram-bot>=20.3
+jdatetime>=3.7.0
+
+# وابستگی‌های اضافی برای بهبود هماهنگی نسخه‌ها
+certifi
+charset-normalizer
+idna
+urllib3
+httpx
