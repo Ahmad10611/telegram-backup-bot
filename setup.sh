@@ -1,27 +1,22 @@
 #!/bin/bash
-# setup.sh - نصب خودکار ربات پشتیبان‌گیری تلگرام
+# setup.sh - نصب پیشرفته ربات
 
 set -e
 
-# رنگ‌ها
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# توابع کمکی
 echo_info() { echo -e "${BLUE}ℹ ${NC}$1"; }
 echo_success() { echo -e "${GREEN}✓${NC} $1"; }
 echo_error() { echo -e "${RED}✗${NC} $1" >&2; }
 echo_warning() { echo -e "${YELLOW}⚠${NC} $1"; }
 
-# متغیرهای پیش‌فرض
 INSTALL_DIR="${1:-$(pwd)}"
 PYTHON_MIN_VERSION="3.7"
-REQUIRED_PACKAGES=("curl" "git")
 
-# تابع نمایش banner
 show_banner() {
     echo -e "${BLUE}"
     echo "╔════════════════════════════════════════════╗"
@@ -31,16 +26,14 @@ show_banner() {
     echo -e "${NC}"
 }
 
-# تشخیص سیستم عامل
 detect_os() {
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         OS=$ID
         OS_VERSION=$VERSION_ID
-        OS_LIKE=$ID_LIKE
     elif [ -f /etc/redhat-release ]; then
         OS="rhel"
-        OS_VERSION=$(cat /etc/redhat-release | grep -oP '\d+\.\d+' | head -1)
+        OS_VERSION=$(cat /etc/redhat-release | grep -oP '\d+' | head -1)
     elif [ -f /etc/debian_version ]; then
         OS="debian"
         OS_VERSION=$(cat /etc/debian_version)
@@ -51,36 +44,82 @@ detect_os() {
     echo_info "سیستم عامل: $OS $OS_VERSION"
 }
 
-# بررسی دسترسی root
-check_root() {
-    if [ "$EUID" -ne 0 ] && [ "$OS" != "Darwin" ]; then
-        echo_warning "برای نصب کامل، اجرا با sudo توصیه می‌شود"
-        read -p "ادامه می‌دهید? (y/n): " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            exit 1
-        fi
-    fi
-}
-
-# پیدا کردن Python مناسب
 find_python() {
-    local python_commands=("python3.11" "python3.10" "python3.9" "python3.8" "python3.7" "python3")
-    
-    for py_cmd in "${python_commands[@]}"; do
-        if command -v "$py_cmd" &>/dev/null; then
-            local version=$($py_cmd -c 'import sys; print(".".join(map(str, sys.version_info[:2])))' 2>/dev/null || echo "0.0")
+    for py in python3.11 python3.10 python3.9 python3.8 python3.7 python3; do
+        if command -v "$py" &>/dev/null; then
+            version=$($py -c 'import sys; print(".".join(map(str, sys.version_info[:2])))' 2>/dev/null || echo "0.0")
             if awk -v ver="$version" -v min="$PYTHON_MIN_VERSION" 'BEGIN{exit(ver<min)}' 2>/dev/null; then
-                echo "$py_cmd"
+                echo "$py"
                 return 0
             fi
         fi
     done
+    return 1
+}
+
+install_python_centos7() {
+    echo_info "نصب IUS Repository برای CentOS 7..."
+    
+    # حذف repo قدیمی اگر وجود داره
+    yum remove -y ius-release 2>/dev/null || true
+    
+    # نصب IUS
+    yum install -y https://repo.ius.io/ius-release-el7.rpm || {
+        echo_warning "نصب از IUS ناموفق، تلاش با روش دیگر..."
+        
+        # روش دوم: نصب از EPEL + SCL
+        yum install -y centos-release-scl
+        yum install -y rh-python38 rh-python38-python-pip rh-python38-python-devel
+        
+        if [ -f /opt/rh/rh-python38/enable ]; then
+            echo_success "Python 3.8 از SCL نصب شد"
+            
+            # ایجاد wrapper
+            cat > /usr/local/bin/python3.8 <<'EOF'
+#!/bin/bash
+source /opt/rh/rh-python38/enable
+exec python3 "$@"
+EOF
+            chmod +x /usr/local/bin/python3.8
+            
+            cat > /usr/local/bin/pip3.8 <<'EOF'
+#!/bin/bash
+source /opt/rh/rh-python38/enable
+exec pip3 "$@"
+EOF
+            chmod +x /usr/local/bin/pip3.8
+            
+            return 0
+        fi
+        
+        return 1
+    }
+    
+    # پاک کردن cache
+    yum clean all
+    yum makecache
+    
+    # تلاش برای نصب python39
+    if yum install -y python39 python39-pip python39-devel 2>/dev/null; then
+        echo_success "Python 3.9 از IUS نصب شد"
+        return 0
+    fi
+    
+    # تلاش برای نصب python38
+    if yum install -y python38 python38-pip python38-devel 2>/dev/null; then
+        echo_success "Python 3.8 از IUS نصب شد"
+        return 0
+    fi
+    
+    # تلاش برای نصب python36
+    if yum install -y python36 python36-pip python36-devel 2>/dev/null; then
+        echo_warning "Python 3.6 نصب شد (حداقل نسخه)"
+        return 0
+    fi
     
     return 1
 }
 
-# نصب Python
 install_python() {
     echo_info "نصب Python 3.8+..."
     
@@ -89,7 +128,6 @@ install_python() {
             apt-get update -qq
             apt-get install -y software-properties-common
             
-            # اضافه کردن PPA برای نسخه‌های جدید
             if command -v add-apt-repository &>/dev/null; then
                 add-apt-repository -y ppa:deadsnakes/ppa 2>/dev/null || true
                 apt-get update -qq
@@ -100,20 +138,28 @@ install_python() {
             apt-get install -y python3 python3-venv python3-dev python3-pip
             ;;
             
-        centos|rhel|rocky|almalinux|fedora)
+        centos|rhel)
             local ver_major=$(echo $OS_VERSION | cut -d. -f1)
             
-            if [ "$ver_major" -le 7 ]; then
-                # CentOS/RHEL 7
-                yum install -y epel-release
-                yum install -y https://repo.ius.io/ius-release-el7.rpm 2>/dev/null || true
-                yum install -y python39 python39-pip python39-devel || \
-                yum install -y python38 python38-pip python38-devel
+            if [ "$ver_major" -eq 7 ]; then
+                install_python_centos7 || {
+                    echo_error "نصب Python ناموفق"
+                    echo_info "لطفاً دستی Python 3.7+ نصب کنید:"
+                    echo "  yum install -y centos-release-scl"
+                    echo "  yum install -y rh-python38"
+                    exit 1
+                }
             else
-                # CentOS/RHEL 8+
                 dnf install -y python39 python39-pip python39-devel || \
-                dnf install -y python38 python38-pip python38-devel
+                dnf install -y python38 python38-pip python38-devel || \
+                dnf install -y python3 python3-pip python3-devel
             fi
+            ;;
+            
+        rocky|almalinux|fedora)
+            dnf install -y python39 python39-pip python39-devel || \
+            dnf install -y python38 python38-pip python38-devel || \
+            dnf install -y python3 python3-pip python3-devel
             ;;
             
         arch|manjaro)
@@ -128,19 +174,8 @@ install_python() {
             apk add --no-cache python3 py3-pip python3-dev
             ;;
             
-        Darwin) # macOS
-            if command -v brew &>/dev/null; then
-                brew install python@3.9 || brew install python@3.8
-            else
-                echo_error "Homebrew یافت نشد. لطفاً Python 3.8+ را دستی نصب کنید"
-                echo_info "https://www.python.org/downloads/"
-                exit 1
-            fi
-            ;;
-            
         *)
             echo_error "سیستم عامل پشتیبانی نمی‌شود: $OS"
-            echo_info "لطفاً Python 3.8+ را دستی نصب کنید"
             exit 1
             ;;
     esac
@@ -148,209 +183,151 @@ install_python() {
     echo_success "Python نصب شد"
 }
 
-# نصب پیش‌نیازهای سیستمی
 install_system_deps() {
     echo_info "نصب پیش‌نیازهای سیستمی..."
     
     case $OS in
         ubuntu|debian|linuxmint)
             apt-get update -qq
-            apt-get install -y \
-                curl \
-                git \
-                build-essential \
-                default-mysql-client \
-                default-libmysqlclient-dev \
-                pkg-config \
-                2>/dev/null || \
-            apt-get install -y \
-                curl \
-                git \
-                build-essential \
-                mysql-client \
-                libmysqlclient-dev \
-                pkg-config
+            apt-get install -y curl git build-essential \
+                default-mysql-client default-libmysqlclient-dev pkg-config 2>/dev/null || \
+            apt-get install -y curl git build-essential \
+                mysql-client libmysqlclient-dev pkg-config
             ;;
             
-        centos|rhel|rocky|almalinux|fedora)
+        centos|rhel)
             local ver_major=$(echo $OS_VERSION | cut -d. -f1)
             
-            if [ "$ver_major" -le 7 ]; then
-                yum groupinstall -y "Development Tools"
-                yum install -y \
-                    curl \
-                    git \
-                    mariadb \
-                    mysql-devel \
-                    gcc \
-                    gcc-c++ \
-                    make
+            if [ "$ver_major" -eq 7 ]; then
+                yum groupinstall -y "Development Tools" 2>/dev/null || true
+                yum install -y curl git gcc gcc-c++ make mariadb mysql-devel
             else
-                dnf groupinstall -y "Development Tools"
-                dnf install -y \
-                    curl \
-                    git \
-                    mariadb \
-                    mysql-devel \
-                    gcc \
-                    gcc-c++ \
-                    make
+                dnf groupinstall -y "Development Tools" 2>/dev/null || true
+                dnf install -y curl git gcc gcc-c++ make mariadb mysql-devel
             fi
+            ;;
+            
+        rocky|almalinux|fedora)
+            dnf groupinstall -y "Development Tools" 2>/dev/null || true
+            dnf install -y curl git gcc gcc-c++ make mariadb mysql-devel
             ;;
             
         arch|manjaro)
-            pacman -Sy --noconfirm \
-                base-devel \
-                curl \
-                git \
-                mariadb-clients \
-                mariadb-libs
+            pacman -Sy --noconfirm base-devel curl git mariadb-clients mariadb-libs
             ;;
             
         opensuse*|sles)
-            zypper install -y \
-                curl \
-                git \
-                gcc \
-                gcc-c++ \
-                make \
-                mariadb-client \
-                libmariadb-devel
+            zypper install -y curl git gcc gcc-c++ make mariadb-client libmariadb-devel
             ;;
             
         alpine)
-            apk add --no-cache \
-                curl \
-                git \
-                build-base \
-                mariadb-client \
-                mariadb-dev
-            ;;
-            
-        Darwin)
-            if command -v brew &>/dev/null; then
-                brew install mysql-client pkg-config
-            fi
+            apk add --no-cache curl git build-base mariadb-client mariadb-dev
             ;;
     esac
     
     echo_success "پیش‌نیازها نصب شدند"
 }
 
-# تابع اصلی نصب
 main() {
     show_banner
-    
-    # تشخیص سیستم عامل
     detect_os
     
-    # بررسی root
-    check_root
+    if [ "$EUID" -ne 0 ] && [ "$OS" != "Darwin" ]; then
+        echo_warning "برای نصب کامل، sudo لازم است"
+    fi
     
-    # جابجایی به دایرکتوری نصب
     mkdir -p "$INSTALL_DIR"
     cd "$INSTALL_DIR"
-    
     echo_info "دایرکتوری نصب: $INSTALL_DIR"
     
-    # پیدا کردن یا نصب Python
     echo_info "بررسی Python..."
     PYTHON_CMD=$(find_python) || {
         install_python
         PYTHON_CMD=$(find_python) || {
-            echo_error "نصب Python ناموفق بود"
+            echo_error "نصب Python ناموفق"
             exit 1
         }
     }
     
-    local python_version=$($PYTHON_CMD --version 2>&1)
-    echo_success "Python یافت شد: $python_version"
+    python_version=$($PYTHON_CMD --version 2>&1)
+    echo_success "Python: $python_version"
     
-    # نصب پیش‌نیازها
     install_system_deps
     
-    # ایجاد virtual environment
-    echo_info "ایجاد محیط مجازی Python..."
+    echo_info "ایجاد محیط مجازی..."
     if [ -d "venv" ]; then
-        echo_warning "محیط مجازی از قبل وجود دارد، در حال استفاده مجدد..."
+        echo_warning "venv موجود است"
     else
-        $PYTHON_CMD -m venv venv
-        echo_success "محیط مجازی ایجاد شد"
+        $PYTHON_CMD -m venv venv || {
+            echo_error "ایجاد venv ناموفق"
+            exit 1
+        }
+        echo_success "venv ایجاد شد"
     fi
     
-    # فعال‌سازی venv
     if [ -f "venv/bin/activate" ]; then
         source venv/bin/activate
-    elif [ -f "venv/Scripts/activate" ]; then
-        source venv/Scripts/activate
     else
         echo_error "فایل activate یافت نشد"
         exit 1
     fi
     
-    # آپگرید pip
     echo_info "آپگرید pip..."
     pip install --upgrade pip setuptools wheel -q
     
-    # نصب کتابخانه‌های Python
-    echo_info "نصب کتابخانه‌های Python..."
-    
+    echo_info "نصب کتابخانه‌ها..."
     if [ ! -f "requirements.txt" ]; then
-        cat > requirements.txt <<EOF
-python-telegram-bot>=20.0
-apscheduler>=3.10.0
-mysql-connector-python>=8.0.33
+        cat > requirements.txt <<'EOF'
+python-telegram-bot>=20.0,<21.0
+apscheduler>=3.10.0,<4.0
+mysql-connector-python>=8.0.33,<9.0
 EOF
     fi
     
-    pip install -r requirements.txt
+    pip install -r requirements.txt || {
+        echo_error "نصب کتابخانه‌ها ناموفق"
+        exit 1
+    }
     echo_success "کتابخانه‌ها نصب شدند"
     
-    # دریافت اطلاعات از کاربر
     echo ""
-    echo_info "لطفاً اطلاعات زیر را وارد کنید:"
-    echo ""
+    echo_info "اطلاعات ربات:"
     
-    read -p "🤖 Telegram Bot Token: " BOT_TOKEN
+    read -p "🤖 Bot Token: " BOT_TOKEN
     while [ -z "$BOT_TOKEN" ]; do
-        echo_error "Token نمی‌تواند خالی باشد"
-        read -p "🤖 Telegram Bot Token: " BOT_TOKEN
+        echo_error "Token خالی است"
+        read -p "🤖 Bot Token: " BOT_TOKEN
     done
     
-    read -p "👤 User ID تلگرام شما: " AUTHORIZED_USER_ID
+    read -p "👤 User ID: " AUTHORIZED_USER_ID
     while [ -z "$AUTHORIZED_USER_ID" ]; do
-        echo_error "User ID نمی‌تواند خالی باشد"
-        read -p "👤 User ID تلگرام شما: " AUTHORIZED_USER_ID
+        echo_error "User ID خالی است"
+        read -p "👤 User ID: " AUTHORIZED_USER_ID
     done
     
-    read -p "🗄 نام کاربری MySQL: " MYSQL_USER
+    read -p "🗄 MySQL User: " MYSQL_USER
     while [ -z "$MYSQL_USER" ]; do
-        echo_error "نام کاربری نمی‌تواند خالی باشد"
-        read -p "🗄 نام کاربری MySQL: " MYSQL_USER
+        read -p "🗄 MySQL User: " MYSQL_USER
     done
     
-    read -sp "🔑 رمز عبور MySQL: " MYSQL_PASSWORD
+    read -sp "🔑 MySQL Pass: " MYSQL_PASSWORD
     echo
     while [ -z "$MYSQL_PASSWORD" ]; do
-        echo_error "رمز عبور نمی‌تواند خالی باشد"
-        read -sp "🔑 رمز عبور MySQL: " MYSQL_PASSWORD
+        read -sp "🔑 MySQL Pass: " MYSQL_PASSWORD
         echo
     done
     
-    read -p "📊 نام دیتابیس: " MYSQL_DB
+    read -p "📊 Database: " MYSQL_DB
     while [ -z "$MYSQL_DB" ]; do
-        echo_error "نام دیتابیس نمی‌تواند خالی باشد"
-        read -p "📊 نام دیتابیس: " MYSQL_DB
+        read -p "📊 Database: " MYSQL_DB
     done
     
-    read -p "🌐 MySQL Host [localhost]: " MYSQL_HOST
+    read -p "🌐 Host [localhost]: " MYSQL_HOST
     MYSQL_HOST=${MYSQL_HOST:-localhost}
     
-    read -p "💾 مسیر ذخیره backup [/root/backups]: " BACKUP_DIR
+    read -p "💾 Backup Dir [/root/backups]: " BACKUP_DIR
     BACKUP_DIR=${BACKUP_DIR:-/root/backups}
     
-    # ایجاد فایل تنظیمات
-    echo_info "ایجاد فایل تنظیمات..."
     cat > config.cfg <<EOF
 [DEFAULT]
 BOT_TOKEN=$BOT_TOKEN
@@ -363,24 +340,21 @@ BACKUP_DIR=$BACKUP_DIR
 EOF
     
     chmod 600 config.cfg
-    echo_success "فایل تنظیمات ایجاد شد"
-    
-    # ایجاد دایرکتوری backup
     mkdir -p "$BACKUP_DIR"
     chmod 700 "$BACKUP_DIR"
+    echo_success "تنظیمات ذخیره شد"
     
-    # تست اتصال (اختیاری)
-    echo_info "تست اتصال به MySQL..."
-    if command -v mysql &>/dev/null; then
-        if mysql -h"$MYSQL_HOST" -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -e "USE $MYSQL_DB" 2>/dev/null; then
-            echo_success "اتصال به MySQL موفق"
-        else
-            echo_warning "اتصال به MySQL ناموفق - لطفاً اطلاعات را بررسی کنید"
-        fi
+    # دانلود main.py
+    if [ ! -f "main.py" ]; then
+        echo_info "دانلود main.py..."
+        curl -fsSL https://raw.githubusercontent.com/Ahmad10611/telegram-backup-bot/main/main.py -o main.py || {
+            echo_error "دانلود main.py ناموفق"
+            exit 1
+        }
+        chmod +x main.py
     fi
     
-    # ایجاد سرویس systemd (Linux)
-    if [ "$OS" != "Darwin" ] && command -v systemctl &>/dev/null && [ "$EUID" -eq 0 ]; then
+    if [ "$OS" != "Darwin" ] && command -v systemctl &>/dev/null; then
         echo_info "ایجاد سرویس systemd..."
         
         cat > /etc/systemd/system/telegram-backup-bot.service <<EOF
@@ -390,7 +364,7 @@ After=network.target
 
 [Service]
 Type=simple
-User=$(whoami)
+User=root
 WorkingDirectory=$INSTALL_DIR
 Environment="PATH=$INSTALL_DIR/venv/bin:/usr/local/bin:/usr/bin:/bin"
 ExecStart=$INSTALL_DIR/venv/bin/python $INSTALL_DIR/main.py
@@ -405,67 +379,51 @@ EOF
         
         systemctl daemon-reload
         systemctl enable telegram-backup-bot.service
-        
-        echo_success "سرویس systemd ایجاد شد"
+        echo_success "سرویس ایجاد شد"
         
         echo ""
-        read -p "آیا می‌خواهید سرویس را الان شروع کنید? (y/n): " -n 1 -r
+        read -p "شروع سرویس الان? (y/n): " -n 1 -r
         echo
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             systemctl start telegram-backup-bot.service
             sleep 2
             
             if systemctl is-active --quiet telegram-backup-bot.service; then
-                echo_success "سرویس با موفقیت شروع شد"
-                echo_info "مشاهده لاگ: journalctl -u telegram-backup-bot -f"
+                echo_success "✅ سرویس فعال است"
+                echo_info "لاگ: journalctl -u telegram-backup-bot -f"
             else
-                echo_error "خطا در شروع سرویس"
-                echo_info "مشاهده خطا: journalctl -u telegram-backup-bot -n 50"
+                echo_error "خطا در شروع"
+                journalctl -u telegram-backup-bot -n 20
             fi
         fi
     else
-        # ایجاد اسکریپت start
-        cat > start.sh <<EOF
+        cat > start.sh <<'EOF'
 #!/bin/bash
-cd "$INSTALL_DIR"
+cd "$(dirname "$0")"
 source venv/bin/activate
 python main.py
 EOF
         chmod +x start.sh
-        
-        echo_success "اسکریپت start.sh ایجاد شد"
-        echo_info "برای اجرا: ./start.sh"
-    fi
-    
-    # نمایش اطلاعات نهایی
-    echo ""
-    echo -e "${GREEN}╔════════════════════════════════════════════╗${NC}"
-    echo -e "${GREEN}║         نصب با موفقیت انجام شد!          ║${NC}"
-    echo -e "${GREEN}╚════════════════════════════════════════════╝${NC}"
-    echo ""
-    echo_info "📁 مسیر نصب: $INSTALL_DIR"
-    echo_info "💾 مسیر backup: $BACKUP_DIR"
-    echo_info "🐍 Python: $($PYTHON_CMD --version)"
-    echo ""
-    echo_info "دستورات مفید:"
-    
-    if [ "$OS" != "Darwin" ] && command -v systemctl &>/dev/null && [ "$EUID" -eq 0 ]; then
-        echo "  • شروع سرویس:    systemctl start telegram-backup-bot"
-        echo "  • توقف سرویس:     systemctl stop telegram-backup-bot"
-        echo "  • وضعیت سرویس:    systemctl status telegram-backup-bot"
-        echo "  • مشاهده لاگ:     journalctl -u telegram-backup-bot -f"
-    else
-        echo "  • اجرای ربات:     ./start.sh"
-        echo "  • یا:             source venv/bin/activate && python main.py"
+        echo_success "start.sh ایجاد شد"
+        echo_info "اجرا: ./start.sh"
     fi
     
     echo ""
-    echo_warning "نکات مهم:"
-    echo "  • فایل config.cfg حاوی اطلاعات حساس است - از آن محافظت کنید"
-    echo "  • برای دریافت User ID تلگرام، @userinfobot را استفاده کنید"
-    echo "  • حتماً ربات را با /start در تلگرام فعال کنید"
+    echo -e "${GREEN}╔════════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║      نصب موفقیت‌آمیز بود!            ║${NC}"
+    echo -e "${GREEN}╚════════════════════════════════════════╝${NC}"
     echo ""
+    echo_info "📁 مسیر: $INSTALL_DIR"
+    echo_info "💾 Backup: $BACKUP_DIR"
+    echo_info "🐍 $python_version"
+    echo ""
+    
+    if command -v systemctl &>/dev/null; then
+        echo "دستورات:"
+        echo "  systemctl start telegram-backup-bot"
+        echo "  systemctl status telegram-backup-bot"
+        echo "  journalctl -u telegram-backup-bot -f"
+    fi
 }
 
-# اجرای تابع اصلی
 main "$@"
