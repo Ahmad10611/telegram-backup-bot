@@ -1,5 +1,5 @@
 #!/bin/bash
-# setup.sh - نصب قدرتمند برای همه سیستم‌ها
+# setup.sh - نسخه نهایی برای CentOS 7
 
 set -e
 
@@ -14,211 +14,82 @@ echo_success() { echo -e "${GREEN}✓${NC} $1"; }
 echo_error() { echo -e "${RED}✗${NC} $1" >&2; }
 echo_warning() { echo -e "${YELLOW}⚠${NC} $1"; }
 
-INSTALL_DIR="${1:-$(pwd)}"
-
 show_banner() {
+    clear
     echo -e "${BLUE}"
     echo "╔════════════════════════════════════════════╗"
     echo "║   نصب ربات پشتیبان‌گیری تلگرام           ║"
-    echo "║   Telegram Backup Bot Installer           ║"
+    echo "║   Telegram Backup Bot v2.0                ║"
     echo "╚════════════════════════════════════════════╝"
     echo -e "${NC}"
 }
 
-detect_os() {
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        OS=$ID
-        OS_VERSION=$VERSION_ID
-    else
-        OS=$(uname -s)
-    fi
-    echo_info "سیستم عامل: $OS $OS_VERSION"
-}
-
-find_python() {
-    for py in python3.11 python3.10 python3.9 python3.8 python3.7 python3.6 python3; do
-        if command -v "$py" &>/dev/null; then
-            version=$($py -c 'import sys; print(".".join(map(str, sys.version_info[:2])))' 2>/dev/null || echo "0.0")
-            if awk -v ver="$version" -v min="3.6" 'BEGIN{exit(ver<min)}' 2>/dev/null; then
-                echo "$py"
-                return 0
-            fi
-        fi
-    done
-    return 1
-}
-
-install_python_centos7() {
-    echo_info "نصب Python برای CentOS 7..."
+main() {
+    show_banner
     
-    # روش 1: نصب از SCL (ساده‌ترین و مطمئن‌ترین)
-    echo_info "تلاش 1: نصب از Software Collections (SCL)..."
-    yum install -y centos-release-scl 2>/dev/null || true
+    INSTALL_DIR="/root/telegram-backup-bot"
     
-    if yum install -y rh-python38 rh-python38-python-pip rh-python38-python-devel 2>/dev/null; then
-        echo_success "Python 3.8 از SCL نصب شد"
-        
-        # ایجاد symlink
-        cat > /usr/local/bin/python3.8 <<'EOFPY'
+    echo_info "CentOS 7 شناسایی شد"
+    echo_warning "شروع نصب Python 3.8 از Software Collections..."
+    
+    # نصب SCL
+    yum install -y centos-release-scl
+    yum install -y rh-python38 rh-python38-python-pip rh-python38-python-devel
+    
+    # ساخت wrapper
+    cat > /usr/local/bin/python3.8 <<'EOFPY'
 #!/bin/bash
 source /opt/rh/rh-python38/enable
 exec python3 "$@"
 EOFPY
-        chmod +x /usr/local/bin/python3.8
-        
-        cat > /usr/local/bin/pip3.8 <<'EOFPIP'
-#!/bin/bash
-source /opt/rh/rh-python38/enable
-exec pip3 "$@"
-EOFPIP
-        chmod +x /usr/local/bin/pip3.8
-        
-        return 0
-    fi
+    chmod +x /usr/local/bin/python3.8
     
-    # روش 2: نصب از IUS
-    echo_info "تلاش 2: نصب از IUS Repository..."
-    yum remove -y ius-release 2>/dev/null || true
+    echo_success "Python 3.8 نصب شد"
+    /usr/local/bin/python3.8 --version
     
-    if curl -fsSL https://repo.ius.io/ius-release-el7.rpm -o /tmp/ius-release.rpm 2>/dev/null; then
-        yum install -y /tmp/ius-release.rpm
-        rm -f /tmp/ius-release.rpm
-        yum clean all
-        yum makecache fast
-        
-        if yum install -y python39 python39-pip python39-devel 2>/dev/null; then
-            echo_success "Python 3.9 از IUS نصب شد"
-            return 0
-        fi
-        
-        if yum install -y python38 python38-pip python38-devel 2>/dev/null; then
-            echo_success "Python 3.8 از IUS نصب شد"
-            return 0
-        fi
-    fi
+    # نصب پیش‌نیازها (بدون mysql-devel)
+    echo_info "نصب پیش‌نیازها..."
+    yum install -y curl git gcc gcc-c++ make
     
-    # روش 3: نصب Python 3.6 (حداقل)
-    echo_info "تلاش 3: نصب Python 3.6 (نسخه پایه)..."
-    if yum install -y python3 python3-pip python3-devel 2>/dev/null; then
-        echo_warning "Python 3.6 نصب شد (نسخه پایه - ممکن است محدودیت داشته باشد)"
-        return 0
-    fi
-    
-    # روش 4: Compile از Source
-    echo_info "تلاش 4: Compile Python از source..."
-    yum groupinstall -y "Development Tools" 2>/dev/null || true
-    yum install -y openssl-devel bzip2-devel libffi-devel zlib-devel wget
-    
-    cd /tmp
-    wget -q https://www.python.org/ftp/python/3.9.18/Python-3.9.18.tgz
-    tar xzf Python-3.9.18.tgz
-    cd Python-3.9.18
-    ./configure --enable-optimizations --prefix=/usr/local
-    make -j$(nproc)
-    make altinstall
-    
-    if [ -f /usr/local/bin/python3.9 ]; then
-        echo_success "Python 3.9 compile شد"
-        return 0
-    fi
-    
-    return 1
-}
-
-install_python() {
-    case $OS in
-        centos|rhel)
-            local ver=$(echo $OS_VERSION | cut -d. -f1)
-            if [ "$ver" -eq 7 ]; then
-                install_python_centos7 || {
-                    echo_error "نصب Python ناموفق"
-                    exit 1
-                }
-            else
-                dnf install -y python39 python39-pip python39-devel || \
-                dnf install -y python38 python38-pip python38-devel
-            fi
-            ;;
-            
-        ubuntu|debian)
-            apt-get update -qq
-            apt-get install -y software-properties-common
-            add-apt-repository -y ppa:deadsnakes/ppa 2>/dev/null || true
-            apt-get update -qq
-            apt-get install -y python3.9 python3.9-venv python3.9-dev python3-pip || \
-            apt-get install -y python3.8 python3.8-venv python3.8-dev python3-pip
-            ;;
-            
-        *)
-            echo_error "OS پشتیبانی نمی‌شود"
-            exit 1
-            ;;
-    esac
-}
-
-install_system_deps() {
-    echo_info "نصب dependencies..."
-    
-    case $OS in
-        centos|rhel)
-            yum groupinstall -y "Development Tools" 2>/dev/null || true
-            yum install -y curl git gcc gcc-c++ make mariadb mysql-devel
-            ;;
-        ubuntu|debian)
-            apt-get update -qq
-            apt-get install -y curl git build-essential mysql-client libmysqlclient-dev
-            ;;
-    esac
-}
-
-main() {
-    show_banner
-    detect_os
-    
+    # ساخت دایرکتوری
     mkdir -p "$INSTALL_DIR"
     cd "$INSTALL_DIR"
-    echo_info "دایرکتوری: $INSTALL_DIR"
     
-    echo_info "بررسی Python..."
-    PYTHON_CMD=$(find_python) || {
-        install_python
-        PYTHON_CMD=$(find_python) || {
-            echo_error "Python یافت نشد"
-            exit 1
-        }
-    }
-    
-    echo_success "Python: $($PYTHON_CMD --version)"
-    
-    install_system_deps
-    
+    # ساخت venv
     echo_info "ساخت virtual environment..."
-    $PYTHON_CMD -m venv venv 2>/dev/null || $PYTHON_CMD -m pip install --user virtualenv && $PYTHON_CMD -m virtualenv venv
-    
+    /usr/local/bin/python3.8 -m venv venv
     source venv/bin/activate
     
-    pip install --upgrade pip -q
+    # آپگرید pip
+    pip install --upgrade pip setuptools wheel
     
+    # نصب packages (بدون mysqlclient، فقط mysql-connector-python)
+    echo_info "نصب کتابخانه‌های Python..."
     cat > requirements.txt <<'EOF'
-python-telegram-bot==13.15
-apscheduler>=3.10.0
-mysql-connector-python>=8.0.33
+python-telegram-bot>=20.0,<21.0
+apscheduler>=3.10.0,<4.0
+mysql-connector-python>=8.0.33,<9.0
 EOF
     
-    echo_info "نصب packages..."
     pip install -r requirements.txt
     
+    echo_success "کتابخانه‌ها نصب شدند"
+    
+    # گرفتن اطلاعات
     echo ""
-    read -p "🤖 Bot Token: " BOT_TOKEN
-    read -p "👤 User ID: " USER_ID
-    read -p "🗄 MySQL User: " DB_USER
-    read -sp "🔑 MySQL Pass: " DB_PASS
+    echo_info "اطلاعات ربات را وارد کنید:"
+    echo ""
+    
+    read -p "🤖 Telegram Bot Token: " BOT_TOKEN
+    read -p "👤 User ID (عددی): " USER_ID
+    read -p "🗄 MySQL Username: " DB_USER
+    read -sp "🔑 MySQL Password: " DB_PASS
     echo
-    read -p "📊 Database: " DB_NAME
-    read -p "🌐 Host [localhost]: " DB_HOST
+    read -p "📊 Database Name: " DB_NAME
+    read -p "🌐 MySQL Host [localhost]: " DB_HOST
     DB_HOST=${DB_HOST:-localhost}
     
+    # ساخت config
     cat > config.cfg <<EOF
 [DEFAULT]
 BOT_TOKEN=$BOT_TOKEN
@@ -234,9 +105,259 @@ EOF
     mkdir -p /root/backups
     
     # دانلود main.py
-    curl -fsSL https://raw.githubusercontent.com/Ahmad10611/telegram-backup-bot/main/main.py -o main.py
+    echo_info "دانلود فایل‌های ربات..."
     
-    # سرویس
+    cat > main.py <<'EOFMAIN'
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import logging
+import subprocess
+import os
+import sys
+from datetime import datetime
+import zipfile
+import configparser
+from pathlib import Path
+
+if sys.version_info < (3, 7):
+    print("❌ Python 3.7+ لازم است")
+    sys.exit(1)
+
+try:
+    from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+    from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler
+    from apscheduler.triggers.interval import IntervalTrigger
+except ImportError as e:
+    print(f"❌ خطا: {e}")
+    print("pip install -r requirements.txt")
+    sys.exit(1)
+
+config = configparser.ConfigParser()
+config.read('config.cfg', encoding='utf-8')
+
+try:
+    TELEGRAM_TOKEN = config['DEFAULT']['BOT_TOKEN']
+    AUTHORIZED_USER_ID = int(config['DEFAULT']['AUTHORIZED_USER_ID'])
+    BACKUP_DIR = config['DEFAULT'].get('BACKUP_DIR', '/root/backups')
+    
+    db_config = {
+        'host': config['DEFAULT']['DB_HOST'],
+        'user': config['DEFAULT']['DB_USER'],
+        'password': config['DEFAULT']['DB_PASSWORD'],
+        'database': config['DEFAULT']['DB_NAME']
+    }
+except Exception as e:
+    print(f"❌ خطا در خواندن config: {e}")
+    sys.exit(1)
+
+log_dir = Path(BACKUP_DIR) / "logs"
+log_dir.mkdir(parents=True, mode=0o700, exist_ok=True)
+log_file = log_dir / f"bot_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_file, encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
+logger = logging.getLogger(__name__)
+scheduler = AsyncIOScheduler()
+
+def is_authorized(update: Update) -> bool:
+    try:
+        user_id = update.message.chat_id if update.message else update.callback_query.message.chat_id
+        return user_id == AUTHORIZED_USER_ID
+    except:
+        return False
+
+def find_mysqldump():
+    paths = [
+        'mysqldump',
+        '/usr/bin/mysqldump',
+        '/usr/local/mysql/bin/mysqldump',
+        '/www/server/mysql/bin/mysqldump'  # BaoTa path
+    ]
+    
+    for path in paths:
+        try:
+            result = subprocess.run([path, '--version'], capture_output=True, timeout=5)
+            if result.returncode == 0:
+                logger.info(f"mysqldump: {path}")
+                return path
+        except:
+            continue
+    return None
+
+def backup_database():
+    try:
+        backup_path = Path(BACKUP_DIR)
+        backup_path.mkdir(parents=True, mode=0o700, exist_ok=True)
+        
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_file = backup_path / f"backup_{timestamp}.sql"
+        zip_file = backup_path / f"backup_{timestamp}.zip"
+        temp_cnf = backup_path / ".my.cnf.tmp"
+        
+        with open(temp_cnf, 'w') as f:
+            f.write(f"[client]\nuser={db_config['user']}\npassword={db_config['password']}\nhost={db_config['host']}\n")
+        os.chmod(temp_cnf, 0o600)
+        
+        mysqldump_cmd = find_mysqldump()
+        if not mysqldump_cmd:
+            logger.error("mysqldump یافت نشد")
+            return None
+        
+        cmd = [
+            mysqldump_cmd,
+            f"--defaults-extra-file={temp_cnf}",
+            "--single-transaction",
+            "--quick",
+            db_config['database']
+        ]
+        
+        logger.info(f"Backup: {db_config['database']}")
+        
+        with open(backup_file, 'w') as f:
+            result = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE, text=True, timeout=300)
+        
+        if result.returncode != 0:
+            logger.error(f"خطا: {result.stderr}")
+            temp_cnf.unlink(missing_ok=True)
+            backup_file.unlink(missing_ok=True)
+            return None
+        
+        with zipfile.ZipFile(zip_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+            zf.write(backup_file, arcname=backup_file.name)
+        
+        temp_cnf.unlink(missing_ok=True)
+        backup_file.unlink(missing_ok=True)
+        
+        size = zip_file.stat().st_size / (1024 * 1024)
+        logger.info(f"✅ موفق: {zip_file.name} ({size:.2f} MB)")
+        
+        return str(zip_file)
+        
+    except Exception as e:
+        logger.error(f"خطا: {e}")
+        return None
+
+async def send_backup(context: ContextTypes.DEFAULT_TYPE, chat_id: int = None):
+    target_id = chat_id or AUTHORIZED_USER_ID
+    
+    try:
+        backup_file = backup_database()
+        
+        if backup_file and os.path.exists(backup_file):
+            size = os.path.getsize(backup_file) / (1024 * 1024)
+            
+            with open(backup_file, 'rb') as f:
+                await context.bot.send_document(
+                    chat_id=target_id,
+                    document=f,
+                    caption=f"📦 Backup\n🗓 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n💾 {size:.2f} MB"
+                )
+            
+            logger.info(f"ارسال شد به {target_id}")
+        else:
+            await context.bot.send_message(target_id, "❌ خطا در backup")
+            
+    except Exception as e:
+        logger.error(f"خطا: {e}")
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_authorized(update):
+        await update.message.reply_text('⛔️ دسترسی ندارید')
+        return
+    
+    keyboard = [
+        [InlineKeyboardButton("📦 Backup فوری", callback_data='backup')],
+        [InlineKeyboardButton("⏰ زمانبندی", callback_data='schedule')],
+        [InlineKeyboardButton("📊 وضعیت", callback_data='status')],
+        [InlineKeyboardButton("🗑 حذف", callback_data='clear')]
+    ]
+    
+    await update.message.reply_text(
+        "👋 خوش آمدید\n\n"
+        "📦 Backup فوری\n"
+        "⏰ زمانبندی خودکار\n"
+        "📊 وضعیت\n"
+        "🗑 حذف زمانبندی",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    if not is_authorized(update):
+        return
+    
+    if query.data == 'backup':
+        await query.message.reply_text('⏳ در حال backup...')
+        await send_backup(context, query.message.chat_id)
+        
+    elif query.data == 'schedule':
+        await query.message.reply_text('⏰ تعداد دقایق:')
+        context.user_data['waiting'] = True
+        
+    elif query.data == 'status':
+        jobs = scheduler.get_jobs()
+        if jobs:
+            minutes = jobs[0].trigger.interval.total_seconds() / 60
+            text = f"✅ فعال\n⏱ هر {minutes:.0f} دقیقه"
+        else:
+            text = "❌ غیرفعال"
+        await query.message.reply_text(text)
+        
+    elif query.data == 'clear':
+        scheduler.remove_all_jobs()
+        await query.message.reply_text('✅ حذف شد')
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_authorized(update) or not context.user_data.get('waiting'):
+        return
+    
+    try:
+        minutes = int(update.message.text)
+        if minutes < 5:
+            await update.message.reply_text('⚠️ حداقل 5 دقیقه')
+            return
+        
+        scheduler.remove_all_jobs()
+        scheduler.add_job(send_backup, IntervalTrigger(minutes=minutes), args=(context,), id='job')
+        
+        await update.message.reply_text(f"✅ تنظیم شد: هر {minutes} دقیقه")
+        context.user_data['waiting'] = False
+        
+    except:
+        await update.message.reply_text('❌ عدد وارد کنید')
+
+def main():
+    logger.info("شروع ربات")
+    
+    app = Application.builder().token(TELEGRAM_TOKEN).build()
+    
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(button))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    
+    scheduler.start()
+    
+    logger.info("✅ آماده")
+    app.run_polling(drop_pending_updates=True)
+
+if __name__ == '__main__':
+    main()
+EOFMAIN
+    
+    chmod +x main.py
+    
+    # ساخت سرویس
     cat > /etc/systemd/system/telegram-backup-bot.service <<EOF
 [Unit]
 Description=Telegram Backup Bot
@@ -256,16 +377,29 @@ EOF
     
     systemctl daemon-reload
     systemctl enable telegram-backup-bot
-    systemctl start telegram-backup-bot
     
-    sleep 2
+    echo ""
+    echo -e "${GREEN}╔════════════════════════════════════╗${NC}"
+    echo -e "${GREEN}║       نصب موفق! ✅                ║${NC}"
+    echo -e "${GREEN}╚════════════════════════════════════╝${NC}"
+    echo ""
     
-    if systemctl is-active --quiet telegram-backup-bot; then
-        echo_success "✅ نصب موفق!"
-        echo_info "لاگ: journalctl -u telegram-backup-bot -f"
-    else
-        echo_error "خطا در شروع"
-        journalctl -u telegram-backup-bot -n 30
+    read -p "شروع ربات الان? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        systemctl start telegram-backup-bot
+        sleep 3
+        
+        if systemctl is-active --quiet telegram-backup-bot; then
+            echo_success "✅ ربات فعال است"
+            echo ""
+            echo "دستورات:"
+            echo "  systemctl status telegram-backup-bot"
+            echo "  journalctl -u telegram-backup-bot -f"
+        else
+            echo_error "خطا"
+            journalctl -u telegram-backup-bot -n 20
+        fi
     fi
 }
 
